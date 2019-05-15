@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2014 Chukong Technologies Inc.
+ * Copyright (c) 2014-2016 Chukong Technologies Inc.
+ * Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -206,9 +207,9 @@ _p._ctor = function(value, callback, target) {
 
 _p = cc.MenuItemSprite.prototype;
 _p._ctor = function(normalSprite, selectedSprite, three, four, five) {
-    if (selectedSprite) {
+    if (normalSprite) {
         normalSprite = normalSprite;
-        selectedSprite = selectedSprite;
+        selectedSprite = selectedSprite || null;
         var disabledSprite, target, callback;
         if (five) {
             disabledSprite = three;
@@ -335,7 +336,7 @@ cc.ParticleExplosion.prototype._ctor = dummyCtor;
 cc.ParticleSmoke.prototype._ctor = dummyCtor;
 cc.ParticleRain.prototype._ctor = dummyCtor;
 cc.ParticleSnow.prototype._ctor = dummyCtor;
-                                      
+
 
 
 /************************  ProgressTimer  *************************/
@@ -351,7 +352,7 @@ _p._ctor = function(placeholder, dimensions, alignment, fontName, fontSize){
         this.initWithPlaceHolder('', dimensions, alignment, fontName, fontSize);
         if(placeholder)
             this._placeHolder = placeholder;
-    }        
+    }
     else if(fontName === undefined && alignment !== undefined){
         fontName = arguments[1];
         fontSize = arguments[2];
@@ -427,8 +428,8 @@ cc.Speed.prototype._ctor = function(action, speed) {
 
 cc.Follow.prototype._ctor = function (followedNode, rect) {
     if(followedNode)
-        rect ? ret.initWithTarget(followedNode, rect)
-             : ret.initWithTarget(followedNode);
+        rect ? this.initWithTarget(followedNode, rect)
+             : this.initWithTarget(followedNode);
 };
 
 cc.OrbitCamera.prototype._ctor = function (t, radius, deltaRadius, angleZ, deltaAngleZ, angleX, deltaAngleX) {
@@ -497,7 +498,7 @@ cc.FadeOutTRTiles.prototype._ctor = durationCtor;
 cc.FadeOutBLTiles.prototype._ctor = durationCtor;
 cc.FadeOutUpTiles.prototype._ctor = durationCtor;
 cc.FadeOutDownTiles.prototype._ctor = durationCtor;
-   
+
 
 cc.Twirl.prototype._ctor = function(duration, gridSize, position, twirls, amplitude) {
     amplitude !== undefined && this.initWithDuration(duration, gridSize, position, twirls, amplitude);
@@ -824,7 +825,7 @@ cc.GLProgram.prototype._ctor = function(vShaderFileName, fShaderFileName) {
         cc.GLProgram.prototype.init.call(this, vShaderFileName, fShaderFileName);
         cc.GLProgram.prototype.link.call(this);
         cc.GLProgram.prototype.updateUniforms.call(this);
-    } 
+    }
 };
 
 
@@ -855,7 +856,7 @@ cc.GLProgram.prototype._ctor = function(vShaderFileName, fShaderFileName) {
  * var spriteFrame = cc.spriteFrameCache.getSpriteFrame('grossini_dance_01.png');
  * var sprite = cc.Sprite.create(spriteFrame);
  *
- * 4.Create a sprite with an exsiting texture contained in a CCTexture2D object
+ * 4.Create a sprite with an existing texture contained in a CCTexture2D object
  *      After creation, the rect will be the size of the texture, and the offset will be (0,0).
  * var texture = cc.textureCache.addImage('HelloHTML5World.png');
  * var sprite1 = cc.Sprite.create(texture);

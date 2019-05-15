@@ -1,6 +1,7 @@
 /****************************************************************************
 Copyright (c) 2010-2012 cocos2d-x.org
-Copyright (c) 2013-2014 Chukong Technologies Inc.
+Copyright (c) 2013-2016 Chukong Technologies Inc.
+Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
 http://www.cocos2d-x.org
 
@@ -53,52 +54,27 @@ public:
     /**
      *@brief    If the sender doesn't want to attach to the IME, return true.
      */
-    virtual bool onTextFieldAttachWithIME(TextFieldTTF * sender)
-    {
-        CC_UNUSED_PARAM(sender);
-        return false;
-    }
-
+    virtual bool onTextFieldAttachWithIME(TextFieldTTF* sender);
     /**
      *@brief    If the sender doesn't want to detach from the IME, return true.
      */
-    virtual bool onTextFieldDetachWithIME(TextFieldTTF * sender)
-    {
-        CC_UNUSED_PARAM(sender);
-        return false;
-    }
+    virtual bool onTextFieldDetachWithIME(TextFieldTTF* sender);
 
     /**
      *@brief    If the sender doesn't want to insert the text, return true.
      */
-    virtual bool onTextFieldInsertText(TextFieldTTF * sender, const char * text, size_t nLen)
-    {
-        CC_UNUSED_PARAM(sender);
-        CC_UNUSED_PARAM(text);
-        CC_UNUSED_PARAM(nLen);
-        return false;
-    }
+    virtual bool onTextFieldInsertText(TextFieldTTF* sender, const char* text, size_t nLen);
 
     /**
      *@brief    If the sender doesn't want to delete the delText, return true.
      */
-    virtual bool onTextFieldDeleteBackward(TextFieldTTF * sender, const char * delText, size_t nLen)
-    {
-        CC_UNUSED_PARAM(sender);
-        CC_UNUSED_PARAM(delText);
-        CC_UNUSED_PARAM(nLen);
-        return false;
-    }
+    virtual bool onTextFieldDeleteBackward(TextFieldTTF* sender, const char* delText, size_t nLen);
 
     /**
      *@brief    If the sender doesn't want to draw, return true.
      * @js NA
      */
-    virtual bool onVisit(TextFieldTTF * sender,Renderer *renderer, const Mat4 &transform, uint32_t flags)
-    {
-        CC_UNUSED_PARAM(sender);
-        return false;
-    }
+    virtual bool onVisit(TextFieldTTF* sender, Renderer* renderer, const Mat4& transform, uint32_t flags);
 };
 
 /**
@@ -152,17 +128,17 @@ public:
     /**
      * @lua NA
      */
-    inline TextFieldDelegate* getDelegate() const { return _delegate; };
+    TextFieldDelegate* getDelegate() const { return _delegate; }
     /**
      * @lua NA
      */
-    inline void setDelegate(TextFieldDelegate* delegate) { _delegate = delegate; };
+    void setDelegate(TextFieldDelegate* delegate) { _delegate = delegate; }
 
     /**
      * Query the currently inputed character count.
      *@return The total input character count.
      */
-    inline int getCharCount() const { return _charCount; };
+    std::size_t getCharCount() const { return _charCount; }
     
     /**
      * Query the color of place holder.
@@ -226,13 +202,15 @@ public:
      * @js NA
      */
     virtual void setSecureTextEntry(bool value);
+    virtual void setPasswordTextStyle(const std::string& text);
+    const std::string& getPasswordTextStyle() const;
 
     /**
      * Query whether the currently display mode is secure text entry or not.
      *@return Whether current text is displayed as secure text entry.
      * @js NA
      */
-    virtual bool isSecureTextEntry();
+    virtual bool isSecureTextEntry()const;
 
     virtual void visit(Renderer *renderer, const Mat4 &parentTransform, uint32_t parentFlags) override;
 
@@ -277,7 +255,7 @@ protected:
     virtual void controlKey(EventKeyboard::KeyCode keyCode) override;
 
     TextFieldDelegate * _delegate;
-    int _charCount;
+    std::size_t _charCount;
 
     std::string _inputText;
 
@@ -286,6 +264,7 @@ protected:
     Color4B _colorText;
 
     bool _secureTextEntry;
+    std::string _passwordStyleText;
 
     // Need use cursor
     bool _cursorEnabled;
@@ -301,6 +280,7 @@ protected:
     void makeStringSupportCursor(std::string& displayText);
     void updateCursorDisplayText();
     void setAttachWithIME(bool isAttachWithIME);
+    void setTextColorInternally(const Color4B& color);
 
 private:
     class LengthStack;

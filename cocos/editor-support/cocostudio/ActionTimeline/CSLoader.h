@@ -1,5 +1,6 @@
 ﻿/****************************************************************************
  Copyright (c) 2013 cocos2d-x.org
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
  
  http://www.cocos2d-x.org
  
@@ -27,8 +28,10 @@
 
 #include "editor-support/cocostudio/DictionaryHelper.h"
 #include "editor-support/cocostudio/CocosStudioExport.h"
-#include "cocos2d.h"
+
 #include "base/ObjectFactory.h"
+#include "base/CCData.h"
+#include "ui/UIWidget.h"
 
 namespace flatbuffers
 {

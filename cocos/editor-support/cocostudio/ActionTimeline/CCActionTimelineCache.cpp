@@ -1,5 +1,6 @@
 /****************************************************************************
 Copyright (c) 2013 cocos2d-x.org
+Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
 http://www.cocos2d-x.org
 
@@ -59,7 +60,6 @@ static const char* Property_AnchorPoint     = "AnchorPoint";
 static const char* Property_ZOrder          = "ZOrder";
 static const char* Property_ActionValue     = "ActionValue";
 static const char* Property_BlendValue      = "BlendFunc";
-static const char* Property_PlayableAct     = "PlayableAct";
 
 static const char* ACTION           = "action";
 static const char* DURATION         = "duration";
@@ -76,7 +76,6 @@ static const char* START_FRAME      = "startFrame";
 static const char* X                = "x";
 static const char* Y                = "y";
 static const char* ROTATION         = "rotation";
-static const char* ALPHA            = "alpha";
 static const char* RED              = "red";
 static const char* GREEN            = "green";
 static const char* BLUE             = "blue";
@@ -506,7 +505,7 @@ ActionTimeline* ActionTimelineCache::createActionWithDataBuffer(const cocos2d::D
         Timeline* timeline = loadTimelineWithFlatBuffers(timelineFlatBuf);
         if (timeline)
         {
-            properTimelineMap.insert(std::make_pair(timelineFlatBuf->property()->c_str(), timeline));
+            properTimelineMap.emplace(timelineFlatBuf->property()->c_str(), timeline);
         }
     }
 
@@ -523,11 +522,11 @@ Timeline* ActionTimelineCache::loadTimelineWithFlatBuffers(const flatbuffers::Ti
     
     // property
     std::string property = flatbuffers->property()->c_str();
-    if(property == "")
+    if(property.empty())
         return nullptr;
     
     
-    if(property != "")
+    if(!property.empty())
     {
         timeline = Timeline::create();
         
@@ -642,7 +641,7 @@ Frame* ActionTimelineCache::loadPositionFrameWithFlatBuffers(const flatbuffers::
 {
     PositionFrame* frame = PositionFrame::create();
     
-    auto f_position = flatbuffers->postion();
+    auto f_position = flatbuffers->position();
     Vec2 position(f_position->x(), f_position->y());
     frame->setPosition(position);
     
@@ -801,7 +800,7 @@ Frame* ActionTimelineCache::loadEventFrameWithFlatBuffers(const flatbuffers::Eve
     
     std::string event = flatbuffers->value()->c_str();
     
-    if (event != "")
+    if (!event.empty())
         frame->setEvent(event);    
     
     int frameIndex = flatbuffers->frameIndex();
@@ -966,12 +965,10 @@ ActionTimeline* ActionTimelineCache::createActionWithFlatBuffersForSimulator(con
     fbs->_isSimulator = true;
     auto builder = fbs->createFlatBuffersWithXMLFileForSimulator(fileName);
     
-    ActionTimeline* action = ActionTimeline::create();
-    
     auto csparsebinary = GetCSParseBinary(builder->GetBufferPointer());
     auto nodeAction = csparsebinary->action();
     
-    action = ActionTimeline::create();
+    auto action = ActionTimeline::create();
     
     int duration = nodeAction->duration();
     action->setDuration(duration);
@@ -1000,7 +997,7 @@ ActionTimeline* ActionTimelineCache::createActionWithFlatBuffersForSimulator(con
         Timeline* timeline = loadTimelineWithFlatBuffers(timelineFlatBuf);
         if (timeline)
         {
-            properTimelineMap.insert(std::make_pair(timelineFlatBuf->property()->c_str(), timeline));
+            properTimelineMap.emplace(timelineFlatBuf->property()->c_str(), timeline);
         }
     }
 

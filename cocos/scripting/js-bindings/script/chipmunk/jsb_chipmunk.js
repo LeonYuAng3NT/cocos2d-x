@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2014 Chukong Technologies Inc.
+ * Copyright (c) 2013-2016 Chukong Technologies Inc.
+ * Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -150,6 +151,12 @@ cp.bb = function(l, b, r, t) {
 //
 
 // Body
+cp.Body.prototype.getVelAtWorldPoint = function(point) {
+        return this.getVelocityAtWorldPoint(point);
+}
+cp.Body.prototype.getVelAtLocalPoint = function(point) {
+        return this.getVelocityAtLocalPoint(point);
+}
 cp.Body.prototype.getVel = function() {
         return this.getVelocity();
 }
@@ -189,7 +196,6 @@ cp.Body.prototype.applyForce = function(force, point) {
 cp.Shape.prototype.setLayers = function(layer) {
         var filter = this.getFilter();
         filter.mask = layer;
-        filter.categories.layer;
         this.setFilter(filter);
 }
 cp.Shape.prototype.getLayers = function() {

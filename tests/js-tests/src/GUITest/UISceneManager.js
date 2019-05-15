@@ -1,6 +1,7 @@
 /****************************************************************************
  Copyright (c) 2011-2012 cocos2d-x.org
- Copyright (c) 2013-2014 Chukong Technologies Inc.
+ Copyright (c) 2013-2016 Chukong Technologies Inc.
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
  http://www.cocos2d-x.org
 
@@ -276,9 +277,9 @@
                 }
             },
             {
-                title: "UITextTest_IgnoreConentSize",
+                title: "UITextTest_IgnoreContentSize",
                 func: function(){
-                    return new UITextTest_IgnoreConentSize();
+                    return new UITextTest_IgnoreContentSize();
                 }
             },
             {
@@ -411,6 +412,12 @@
                 }
             },
             {
+                title: "UILayoutTest_Layout_Scaled_Widget",
+                func: function () {
+                    return new UILayoutTest_Layout_Scaled_Widget();
+                }
+            },
+            {
                 title: "UILayoutComponent_Berth_Test",
                 func: function () {
                     return new UILayoutComponent_Berth_Test();
@@ -477,6 +484,12 @@
                 func: function () {
                     return new UIScrollViewTest_Vertical_Multiple();
                 }
+            },
+            {
+                title:"UIScrollView Scroll Bar Test",
+                func: function () {
+                    return new UIScrollViewTest_ScrollBar();
+                }
             }
         ],
         "UIPageView": [
@@ -515,6 +528,24 @@
                 func: function () {
                     return new UIPageViewDisableTouchTest();
                 }
+            },
+            {
+                title: "UIPageViewJumpToPageTest",
+                func: function () {
+                    return new UIPageViewJumpToPageTest();
+                }
+            },
+            {
+                title: "UIPageViewChildSizeTest",
+                func: function () {
+                    return new UIPageViewChildSizeTest();
+                }
+            },
+            {
+                title: "UIPageViewIndicatorTest",
+                func: function () {
+                    return new UIPageViewIndicatorTest();
+                }
             }
         ],
         "UIListView": [
@@ -534,6 +565,30 @@
                 title:"UIListViewTest_TouchIntercept ",
                 func: function() {
                     return new UIListViewTest_TouchIntercept();
+                }
+            },
+            {
+                title:"UIListViewTest Scroll to item  vertical",
+                func: function() {
+                    return new UIListViewTest_ScrollToItemVertical();
+                }
+            },
+            {
+                title:"UIListViewTest Scroll to item horizontal",
+                func: function() {
+                    return new UIListViewTest_ScrollToItemHorizontal();
+                }
+            },
+            {
+                title:"UIListViewTest magnetic vertical",
+                func: function() {
+                    return new UIListViewTest_MagneticVertical();
+                }
+            },
+            {
+                title:"UIListViewTest magnetic horizontal",
+                func: function() {
+                    return new UIListViewTest_MagneticHorizontal();
                 }
             }
         ],
@@ -631,6 +686,16 @@
             }
         ];
     }
+    else {
+        testingItems["UIRichText"] = [
+            {
+                title: "UIRichTextTest",
+                func: function () {
+                    return new UIRichTextTest();
+                }
+            }
+        ];
+    }
 
     if (cc.sys.os == cc.sys.OS_ANDROID || cc.sys.os == cc.sys.OS_IOS || !cc.sys.isNative)
     {
@@ -668,6 +733,7 @@
         ctor: function(){
             TestScene.prototype.ctor.call(this);
 
+            global.UISceneManager.getInstance().ctor();
             var menu = new cc.Menu();
             menu.x = 0;
             menu.y = 0;

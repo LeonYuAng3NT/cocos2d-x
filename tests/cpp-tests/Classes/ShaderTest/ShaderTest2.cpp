@@ -1,5 +1,6 @@
 /****************************************************************************
- Copyright (c) 2014 Chukong Technologies Inc.
+ Copyright (c) 2014-2016 Chukong Technologies Inc.
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
  http://www.cocos2d-x.org
 
@@ -107,7 +108,7 @@ public:
             _trianglesCommand.init(_globalZOrder, _texture->getName(), getGLProgramState(), _blendFunc, _polyInfo.triangles, transform, flags);
             renderer->addCommand(&_trianglesCommand);
 
-            // postive effects: oder >= 0
+            // positive effects: order >= 0
             for(auto it = std::begin(_effects)+idx; it != std::end(_effects); ++it) {
                 QuadCommand &q = std::get<2>(*it);
                 q.init(_globalZOrder, _texture->getName(), std::get<1>(*it)->getGLProgramState(), _blendFunc, &_quad, 1, transform, flags);
@@ -415,8 +416,8 @@ bool EffectNormalMapped::init()
 }
 bool EffectNormalMapped::initNormalMap(const std::string& normalMapFileName)
 {
-    auto normalMapTextrue = Director::getInstance()->getTextureCache()->addImage(normalMapFileName);
-    getGLProgramState()->setUniformTexture("u_normalMap", normalMapTextrue);
+    auto normalMapTexture = Director::getInstance()->getTextureCache()->addImage(normalMapFileName);
+    getGLProgramState()->setUniformTexture("u_normalMap", normalMapTexture);
     return true;
 }
 void EffectNormalMapped::setTarget(EffectSprite* sprite)
@@ -540,17 +541,17 @@ bool EffectSpriteLamp::init()
         this->addChild(_lightSprite);
         _lightSprite->setPosition(Vec2(pos.x, s.height- pos.y));
         Mat4 mat = _sprite->getNodeToWorldTransform();
-        Point lightPosInLocalSpace=PointApplyAffineTransform(Vec2(pos.x, pos.y),_sprite->worldToNodeTransform());
+        Point lightPosInLocalSpace = PointApplyAffineTransform(Vec2(pos.x, pos.y), _sprite->getWorldToNodeAffineTransform());
         lampEffect->setLightColor(Color4F(1,1,1,1));
         lampEffect->setLightPos(Vec3(lightPosInLocalSpace.x, lightPosInLocalSpace.y, 50));
         lampEffect->setKBump(2);
         _sprite->setEffect(lampEffect);
         _effect = lampEffect;
-        auto listerner = EventListenerTouchAllAtOnce::create();
-        listerner->onTouchesBegan = CC_CALLBACK_2(EffectSpriteLamp::onTouchesBegan, this);
-        listerner->onTouchesMoved = CC_CALLBACK_2(EffectSpriteLamp::onTouchesMoved, this);
-        listerner->onTouchesEnded = CC_CALLBACK_2(EffectSpriteLamp::onTouchesEnded, this);
-        _eventDispatcher->addEventListenerWithSceneGraphPriority(listerner, this);
+        auto listener = EventListenerTouchAllAtOnce::create();
+        listener->onTouchesBegan = CC_CALLBACK_2(EffectSpriteLamp::onTouchesBegan, this);
+        listener->onTouchesMoved = CC_CALLBACK_2(EffectSpriteLamp::onTouchesMoved, this);
+        listener->onTouchesEnded = CC_CALLBACK_2(EffectSpriteLamp::onTouchesEnded, this);
+        _eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
         return true;
     }
     return false;
@@ -567,7 +568,7 @@ void EffectSpriteLamp::onTouchesBegan(const std::vector<Touch*>& touches, Event 
         _lightSprite->setPosition(Vec2( loc_winSpace.x,  s.height - loc_winSpace.y));
         Vec3 pos(loc_winSpace.x,loc_winSpace.y, 50);
         Mat4 mat = _sprite->getNodeToWorldTransform();
-        Point lightPosInLocalSpace=PointApplyAffineTransform(Vec2(pos.x, pos.y),_sprite->worldToNodeTransform());
+        Point lightPosInLocalSpace = PointApplyAffineTransform(Vec2(pos.x, pos.y), _sprite->getWorldToNodeAffineTransform());
         ((EffectNormalMapped*)_effect)->setLightPos(Vec3(lightPosInLocalSpace.x, lightPosInLocalSpace.y, 50));
     }
 }
@@ -582,7 +583,7 @@ void EffectSpriteLamp::onTouchesMoved(const std::vector<Touch*>& touches, Event 
         _lightSprite->setPosition(Vec2( loc_winSpace.x, s.height - loc_winSpace.y));
         Vec3 pos(loc_winSpace.x,loc_winSpace.y, 50);
         Mat4 mat = _sprite->getNodeToWorldTransform();
-        Point lightPosInLocalSpace=PointApplyAffineTransform(Vec2(pos.x, pos.y),_sprite->worldToNodeTransform());
+        Point lightPosInLocalSpace = PointApplyAffineTransform(Vec2(pos.x, pos.y), _sprite->getWorldToNodeAffineTransform());
         ((EffectNormalMapped*)_effect)->setLightPos(Vec3(lightPosInLocalSpace.x, lightPosInLocalSpace.y, 50));
     }
 }
@@ -597,7 +598,7 @@ void EffectSpriteLamp::onTouchesEnded(const std::vector<Touch*>& touches, Event 
         _lightSprite->setPosition(Vec2( loc_winSpace.x, s.height - loc_winSpace.y));
         Vec3 pos(loc_winSpace.x,loc_winSpace.y, 50);
         Mat4 mat = _sprite->getNodeToWorldTransform();
-        Point lightPosInLocalSpace=PointApplyAffineTransform(Vec2(pos.x, pos.y),_sprite->worldToNodeTransform());
+        Point lightPosInLocalSpace = PointApplyAffineTransform(Vec2(pos.x, pos.y), _sprite->getWorldToNodeAffineTransform());
         ((EffectNormalMapped*)_effect)->setLightPos(Vec3(lightPosInLocalSpace.x, lightPosInLocalSpace.y, 50));
     }
 }

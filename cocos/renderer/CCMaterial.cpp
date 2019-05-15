@@ -1,5 +1,6 @@
 /****************************************************************************
- Copyright (c) 2015 Chukong Technologies Inc.
+ Copyright (c) 2015-2016 Chukong Technologies Inc.
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
  http://www.cocos2d-x.org
 
@@ -52,7 +53,7 @@ static bool isValidUniform(const char* name);
 Material* Material::createWithFilename(const std::string& filepath)
 {
     auto validfilename = FileUtils::getInstance()->fullPathForFilename(filepath);
-    if (validfilename.size() > 0) {
+    if (!validfilename.empty()) {
         auto mat = new (std::nothrow) Material();
         if (mat && mat->initWithFile(validfilename))
         {
@@ -419,8 +420,8 @@ std::string Material::getName() const
 
 Material::Material()
 : _name("")
-, _target(nullptr)
 , _currentTechnique(nullptr)
+, _target(nullptr)
 {
 }
 

@@ -2,7 +2,8 @@
 Copyright (c) 2008-2010 Ricardo Quesada
 Copyright (c) 2010-2012 cocos2d-x.org
 Copyright (c) 2011      Zynga Inc.
-Copyright (c) 2013-2015 Chukong Technologies Inc.
+Copyright (c) 2013-2016 Chukong Technologies Inc.
+Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
 http://www.cocos2d-x.org
 
@@ -30,7 +31,7 @@ THE SOFTWARE.
 #include "2d/CCSprite.h"
 #include "2d/CCLabelAtlas.h"
 #include "2d/CCLabel.h"
-#include "deprecated/CCString.h"
+#include "base/ccUTF8.h"
 #include <stdarg.h>
 
 NS_CC_BEGIN
@@ -333,7 +334,7 @@ bool MenuItemAtlasFont::initWithString(const std::string& value, const std::stri
 
 bool MenuItemAtlasFont::initWithString(const std::string& value, const std::string& charMapFile, int itemWidth, int itemHeight, char startCharMap, const ccMenuCallback& callback)
 {
-    CCASSERT( value.size() != 0, "value length must be greater than 0");
+    CCASSERT( !value.empty(), "value length must be greater than 0");
     LabelAtlas *label = LabelAtlas::create();
     label->initWithString(value, charMapFile, itemWidth, itemHeight, startCharMap);
     if (MenuItemLabel::initWithLabel(label, callback))
@@ -474,7 +475,10 @@ void MenuItemSprite::setNormalImage(Node* image)
         }
 
         _normalImage = image;
-        this->setContentSize(_normalImage->getContentSize());
+        if (_normalImage != nullptr)
+        {
+            this->setContentSize(_normalImage->getContentSize());
+        }
         this->updateImagesVisibility();
     }
 }
@@ -609,20 +613,7 @@ void MenuItemSprite::selected()
 void MenuItemSprite::unselected()
 {
     MenuItem::unselected();
-    if (_normalImage)
-    {
-        _normalImage->setVisible(true);
-
-        if (_selectedImage)
-        {
-            _selectedImage->setVisible(false);
-        }
-
-        if (_disabledImage)
-        {
-            _disabledImage->setVisible(false);
-        }
-    }
+    this->updateImagesVisibility();
 }
 
 void MenuItemSprite::setEnabled(bool bEnabled)
@@ -745,17 +736,17 @@ bool MenuItemImage::initWithNormalImage(const std::string& normalImage, const st
     Node *selectedSprite = nullptr;
     Node *disabledSprite = nullptr;
 
-    if (normalImage.size() >0)
+    if (!normalImage.empty())
     {
         normalSprite = Sprite::create(normalImage);
     }
 
-    if (selectedImage.size() >0)
+    if (!selectedImage.empty())
     {
         selectedSprite = Sprite::create(selectedImage);
     }
 
-    if(disabledImage.size() >0)
+    if(!disabledImage.empty())
     {
         disabledSprite = Sprite::create(disabledImage);
     }
@@ -789,6 +780,7 @@ MenuItemToggle * MenuItemToggle::createWithTarget(Ref* target, SEL_MenuHandler s
 {
     MenuItemToggle *ret = new (std::nothrow) MenuItemToggle();
     ret->MenuItem::initWithCallback(std::bind(selector, target, std::placeholders::_1));
+    ret->autorelease();
 #if CC_ENABLE_GC_FOR_NATIVE_OBJECTS
     auto sEngine = ScriptEngineManager::getInstance()->getScriptEngine();
     if (sEngine)
@@ -812,6 +804,7 @@ MenuItemToggle * MenuItemToggle::createWithCallback(const ccMenuCallback &callba
 {
     MenuItemToggle *ret = new (std::nothrow) MenuItemToggle();
     ret->MenuItem::initWithCallback(callback);
+    ret->autorelease();
 #if CC_ENABLE_GC_FOR_NATIVE_OBJECTS
     auto sEngine = ScriptEngineManager::getInstance()->getScriptEngine();
     if (sEngine)
@@ -959,7 +952,7 @@ void MenuItemToggle::cleanup()
 
 void MenuItemToggle::setSelectedIndex(unsigned int index)
 {
-    if( index != _selectedIndex && _subItems.size() > 0 )
+    if( index != _selectedIndex && !_subItems.empty() )
     {
         _selectedIndex = index;
         if (_selectedItem)

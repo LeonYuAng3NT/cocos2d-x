@@ -1,6 +1,7 @@
 /****************************************************************************
 Copyright (c) 2010-2012 cocos2d-x.org
-Copyright (c) 2013-2014 Chukong Technologies Inc.
+Copyright (c) 2013-2016 Chukong Technologies Inc.
+Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
 http://www.cocos2d-x.org
 
@@ -29,7 +30,7 @@ THE SOFTWARE.
 
 namespace CocosDenshion {
 
-    static SimpleAudioEngine *s_pEngine = 0;
+    static SimpleAudioEngine *s_pEngine = nullptr;
 
     SimpleAudioEngine* SimpleAudioEngine::getInstance() {
         if (! s_pEngine) {
@@ -42,7 +43,7 @@ namespace CocosDenshion {
     void SimpleAudioEngine::end() {
         if (s_pEngine) {
             delete s_pEngine;
-            s_pEngine = NULL;
+            s_pEngine = nullptr;
         }
     }
 

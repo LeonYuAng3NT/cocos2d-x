@@ -1,5 +1,6 @@
 /****************************************************************************
- Copyright (c) 2013-2015 Chukong Technologies Inc.
+ Copyright (c) 2013-2016 Chukong Technologies Inc.
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
  http://www.cocos2d-x.org
 
@@ -76,8 +77,6 @@ public:
      * @param image A Image object pointer.
      * @param frameRect The sprite frame rect in the image atlas.
      * @param rotated Whether is sprite frame is rotated in the image atlas.
-     *
-     * @return
      */
     NinePatchImageParser(Image* image, const Rect& frameRect, bool rotated);
 

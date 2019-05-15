@@ -2,7 +2,8 @@
 Copyright (c) 2008-2010 Ricardo Quesada
 Copyright (c) 2010-2012 cocos2d-x.org
 Copyright (c) 2011      Zynga Inc.
-Copyright (c) 2013-2014 Chukong Technologies Inc.
+Copyright (c) 2013-2016 Chukong Technologies Inc.
+Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
 Copyright (c) 2011 HKASoftware
 
@@ -35,6 +36,7 @@ THE SOFTWARE.
 
  */
 #include "2d/CCFastTMXLayer.h"
+#include <cmath>
 #include "2d/CCFastTMXTiledMap.h"
 #include "2d/CCSprite.h"
 #include "2d/CCCamera.h"
@@ -44,7 +46,7 @@ THE SOFTWARE.
 #include "renderer/CCRenderer.h"
 #include "renderer/CCVertexIndexBuffer.h"
 #include "base/CCDirector.h"
-#include "deprecated/CCString.h"
+#include "base/ccUTF8.h"
 
 NS_CC_BEGIN
 namespace experimental {
@@ -130,7 +132,7 @@ TMXLayer::~TMXLayer()
 {
     CC_SAFE_RELEASE(_tileSet);
     CC_SAFE_RELEASE(_texture);
-    CC_SAFE_DELETE_ARRAY(_tiles);
+    CC_SAFE_FREE(_tiles);
     CC_SAFE_RELEASE(_vData);
     CC_SAFE_RELEASE(_vertexBuffer);
     CC_SAFE_RELEASE(_indexBuffer);
@@ -151,8 +153,8 @@ void TMXLayer::draw(Renderer *renderer, const Mat4& transform, uint32_t flags)
     if( flags != 0 || _dirty || _quadsDirty || isViewProjectionUpdated)
     {
         Size s = Director::getInstance()->getVisibleSize();
-        auto rect = Rect(Camera::getVisitingCamera()->getPositionX() - s.width * 0.5,
-                     Camera::getVisitingCamera()->getPositionY() - s.height * 0.5,
+        auto rect = Rect(Camera::getVisitingCamera()->getPositionX() - s.width * 0.5f,
+                     Camera::getVisitingCamera()->getPositionY() - s.height * 0.5f,
                      s.width,
                      s.height);
         
@@ -198,7 +200,7 @@ void TMXLayer::onDraw(Primitive *primitive)
 
 void TMXLayer::updateTiles(const Rect& culledRect)
 {
-    Rect visibleTiles = culledRect;
+    Rect visibleTiles = Rect(culledRect.origin, culledRect.size * Director::getInstance()->getContentScaleFactor());
     Size mapTileSize = CC_SIZE_PIXELS_TO_POINTS(_mapTileSize);
     Size tileSize = CC_SIZE_PIXELS_TO_POINTS(_tileSet->_tileSize);
     Mat4 nodeToTileTransform = _tileToNodeTransform.getInversed();
@@ -208,10 +210,10 @@ void TMXLayer::updateTiles(const Rect& culledRect)
     visibleTiles.origin.y += 1;
     
     // if x=0.7, width=9.5, we need to draw number 0~10 of tiles, and so is height.
-    visibleTiles.size.width = ceil(visibleTiles.origin.x + visibleTiles.size.width)  - floor(visibleTiles.origin.x);
-    visibleTiles.size.height = ceil(visibleTiles.origin.y + visibleTiles.size.height) - floor(visibleTiles.origin.y);
-    visibleTiles.origin.x = floor(visibleTiles.origin.x);
-    visibleTiles.origin.y = floor(visibleTiles.origin.y);
+    visibleTiles.size.width = std::ceil(visibleTiles.origin.x + visibleTiles.size.width)  - std::floor(visibleTiles.origin.x);
+    visibleTiles.size.height = std::ceil(visibleTiles.origin.y + visibleTiles.size.height) - std::floor(visibleTiles.origin.y);
+    visibleTiles.origin.x = std::floor(visibleTiles.origin.x);
+    visibleTiles.origin.y = std::floor(visibleTiles.origin.y);
 
     // for the bigger tiles.
     int tilesOverX = 0;
@@ -220,8 +222,8 @@ void TMXLayer::updateTiles(const Rect& culledRect)
     float tileSizeMax = std::max(tileSize.width, tileSize.height);
     if (_layerOrientation == FAST_TMX_ORIENTATION_ORTHO)
     {
-        tilesOverX = ceil(tileSizeMax / mapTileSize.width) - 1;
-        tilesOverY = ceil(tileSizeMax / mapTileSize.height) - 1;
+        tilesOverX = std::ceil(tileSizeMax / mapTileSize.width) - 1;
+        tilesOverY = std::ceil(tileSizeMax / mapTileSize.height) - 1;
         
         if (tilesOverX < 0) tilesOverX = 0;
         if (tilesOverY < 0) tilesOverY = 0;
@@ -233,8 +235,8 @@ void TMXLayer::updateTiles(const Rect& culledRect)
         if (overTileRect.size.height < 0) overTileRect.size.height = 0;
         overTileRect = RectApplyTransform(overTileRect, nodeToTileTransform);
         
-        tilesOverX = ceil(overTileRect.origin.x + overTileRect.size.width) - floor(overTileRect.origin.x);
-        tilesOverY = ceil(overTileRect.origin.y + overTileRect.size.height) - floor(overTileRect.origin.y);
+        tilesOverX = std::ceil(overTileRect.origin.x + overTileRect.size.width) - std::floor(overTileRect.origin.x);
+        tilesOverY = std::ceil(overTileRect.origin.y + overTileRect.size.height) - std::floor(overTileRect.origin.y);
     }
     else
     {
@@ -313,7 +315,11 @@ void TMXLayer::updateIndexBuffer()
 {
     if(nullptr == _indexBuffer)
     {
+#ifdef CC_FAST_TILEMAP_32_BIT_INDICES
+        _indexBuffer = IndexBuffer::create(IndexBuffer::IndexType::INDEX_TYPE_UINT_32, (int)_indices.size());
+#else
         _indexBuffer = IndexBuffer::create(IndexBuffer::IndexType::INDEX_TYPE_SHORT_16, (int)_indices.size());
+#endif
         CC_SAFE_RETAIN(_indexBuffer);
     }
     _indexBuffer->updateIndices(&_indices[0], (int)_indices.size(), 0);
@@ -341,15 +347,15 @@ void TMXLayer::setupTiles()
     switch (_layerOrientation)
     {
         case FAST_TMX_ORIENTATION_ORTHO:
-            _screenGridSize.width = ceil(screenSize.width / _mapTileSize.width) + 1;
-            _screenGridSize.height = ceil(screenSize.height / _mapTileSize.height) + 1;
+            _screenGridSize.width = std::ceil(screenSize.width / _mapTileSize.width) + 1;
+            _screenGridSize.height = std::ceil(screenSize.height / _mapTileSize.height) + 1;
 
             // tiles could be bigger than the grid, add additional rows if needed
             _screenGridSize.height += _tileSet->_tileSize.height / _mapTileSize.height;
             break;
         case FAST_TMX_ORIENTATION_ISO:
-            _screenGridSize.width = ceil(screenSize.width / _mapTileSize.width) + 2;
-            _screenGridSize.height = ceil(screenSize.height / (_mapTileSize.height/2)) + 4;
+            _screenGridSize.width = std::ceil(screenSize.width / _mapTileSize.width) + 2;
+            _screenGridSize.height = std::ceil(screenSize.height / (_mapTileSize.height/2)) + 4;
             break;
         case FAST_TMX_ORIENTATION_HEX:
         default:
@@ -556,10 +562,10 @@ void TMXLayer::updateTotalQuads()
         }
         
         int offset = 0;
-        for(auto iter = _indicesVertexZOffsets.begin(); iter != _indicesVertexZOffsets.end(); ++iter)
+        for(auto& vertexZOffset : _indicesVertexZOffsets)
         {
-            std::swap(offset, iter->second);
-            offset += iter->second;
+            std::swap(offset, vertexZOffset.second);
+            offset += vertexZOffset.second;
         }
         updateVertexBuffer();
         
@@ -693,7 +699,7 @@ void TMXLayer::removeTileAt(const Vec2& tileCoordinate)
     }
 }
 
-void TMXLayer::setFlaggedTileGIDByIndex(int index, int gid)
+void TMXLayer::setFlaggedTileGIDByIndex(int index, uint32_t gid)
 {
     if(gid == _tiles[index]) return;
     _tiles[index] = gid;
@@ -715,8 +721,9 @@ void TMXLayer::removeChild(Node* node, bool cleanup)
 // TMXLayer - Properties
 Value TMXLayer::getProperty(const std::string& propertyName) const
 {
-    if (_properties.find(propertyName) != _properties.end())
-        return _properties.at(propertyName);
+    auto propItr = _properties.find(propertyName);
+    if (propItr != _properties.end())
+        return propItr->second;
     
     return Value();
 }
@@ -788,7 +795,7 @@ void TMXLayer::setTileGID(int gid, const Vec2& tileCoordinate, TMXTileFlags flag
     
     if (currentGID == gid && currentFlags == flags) return;
     
-    int gidAndFlags = gid | flags;
+    uint32_t gidAndFlags = gid | flags;
     
     // setting gid=0 is equal to remove the tile
     if (gid == 0)
@@ -828,7 +835,7 @@ void TMXLayer::setTileGID(int gid, const Vec2& tileCoordinate, TMXTileFlags flag
     }
 }
 
-void TMXLayer::setupTileSprite(Sprite* sprite, Vec2 pos, int gid)
+void TMXLayer::setupTileSprite(Sprite* sprite, const Vec2& pos, uint32_t gid)
 {
     sprite->setPosition(getPositionAt(pos));
     sprite->setPositionZ((float)getVertexZForPos(pos));
@@ -848,7 +855,7 @@ void TMXLayer::setupTileSprite(Sprite* sprite, Vec2 pos, int gid)
         sprite->setPosition(getPositionAt(pos).x + sprite->getContentSize().height/2,
                                   getPositionAt(pos).y + sprite->getContentSize().width/2 );
         
-        int flag = gid & (kTMXTileHorizontalFlag | kTMXTileVerticalFlag );
+        uint32_t flag = gid & (kTMXTileHorizontalFlag | kTMXTileVerticalFlag );
         
         // handle the 4 diagonally flipped states.
         if (flag == kTMXTileHorizontalFlag)

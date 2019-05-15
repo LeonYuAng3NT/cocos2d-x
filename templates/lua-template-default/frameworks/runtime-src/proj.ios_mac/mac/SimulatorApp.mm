@@ -1,5 +1,6 @@
 /****************************************************************************
  Copyright (c) 2010 cocos2d-x.org
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
  http://www.cocos2d-x.org
 
@@ -38,7 +39,6 @@
 
 #include "cocos2d.h"
 #include "scripting/lua-bindings/manual/CCLuaEngine.h"
-#include "CodeIDESupport.h"
 
 #include "platform/mac/PlayerMac.h"
 #include "AppEvent.h"

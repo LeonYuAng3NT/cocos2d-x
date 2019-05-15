@@ -1,5 +1,6 @@
 /****************************************************************************
  Copyright (c) 2010 cocos2d-x.org
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
  
  http://www.cocos2d-x.org
  
@@ -36,7 +37,6 @@
 #include "runtime/ConfigParser.h"
 
 #include "cocos2d.h"
-#include "CodeIDESupport.h"
 
 #include "platform/mac/PlayerMac.h"
 #include "AppEvent.h"
@@ -340,13 +340,6 @@ static void glfwDropFunc(GLFWwindow *window, int count, const char **files)
     GLView::setGLContextAttrs(glContextAttrs);
     
     // create console window **MUST** before create opengl view
-#if (CC_CODE_IDE_DEBUG_SUPPORT == 1)
-    if (_project.isShowConsole())
-    {
-        [self openConsoleWindow];
-        CCLOG("%s\n",Configuration::getInstance()->getInfo().c_str());
-    }
-#endif
     float frameScale = _project.getFrameScale();
     
     // get frame size

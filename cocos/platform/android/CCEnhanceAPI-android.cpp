@@ -25,15 +25,16 @@
 #define  LOG_TAG    "CCEnhanceAPI_android Debug"
 #define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
 
-#define CLASS_NAME "org/cocos2dx/lib/Cocos2dxHelper"
+#define CLASS_NAME "org.cocos2dx.lib.Cocos2dxHelper"
 
 // FIXME: using ndk-r10c will cause the next function could not be found. It may be a bug of ndk-r10c.
 // Here is the workaround method to fix the problem.
-#ifdef __aarch64__
-extern "C" size_t __ctype_get_mb_cur_max(void) {
-    return (size_t) sizeof(wchar_t);
-}
-#endif
+// Fixed, at least, in NDK 12b
+//#ifdef __aarch64__
+//extern "C" size_t __ctype_get_mb_cur_max(void) {
+//    return (size_t) sizeof(wchar_t);
+//}
+//#endif
 
 NS_CC_BEGIN
 

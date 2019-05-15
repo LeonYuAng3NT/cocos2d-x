@@ -1,5 +1,6 @@
 /****************************************************************************
 Copyright (c) 2010 cocos2d-x.org
+Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
 http://www.cocos2d-x.org
 
@@ -170,7 +171,7 @@ void SimpleAudioEngine::end()
     if (s_pEngine)
     {
         delete s_pEngine;
-        s_pEngine = NULL;
+        s_pEngine = nullptr;
     }
     
     static_end();

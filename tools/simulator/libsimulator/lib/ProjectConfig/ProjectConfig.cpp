@@ -1,3 +1,27 @@
+/****************************************************************************
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
+ 
+ http://www.cocos2d-x.org
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ 
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
+ ****************************************************************************/
+
 
 #include <sstream>
 
@@ -247,7 +271,7 @@ void ProjectConfig::setDebugLogFilePath(const std::string &logFile)
 string ProjectConfig::getDebugLogFilePath() const
 {
     if (isAbsolutePath(_debugLogFile)) return _debugLogFile;
-    
+
     auto path(getProjectDir());
     path.append(_debugLogFile);
     return path;
@@ -435,7 +459,7 @@ string ProjectConfig::makeCommandLine(unsigned int mask /* = kProjectConfigAll *
     {
         buff << " " << cmd;
     }
-    
+
     string result = buff.str();
     while (result.at(0) == ' ')
     {
@@ -448,9 +472,9 @@ string ProjectConfig::makeCommandLine(unsigned int mask /* = kProjectConfigAll *
 vector<string> ProjectConfig::makeCommandLineVector(unsigned int mask /* = kProjectConfigAll */) const
 {
     vector<string> ret;
-    
+
     stringstream buff;
-    
+
     if (mask & kProjectConfigProjectDir)
     {
         auto path = getProjectDir();
@@ -460,7 +484,7 @@ vector<string> ProjectConfig::makeCommandLineVector(unsigned int mask /* = kProj
             ret.push_back(dealWithSpaceWithPath(path));
         }
     }
-    
+
     if (mask & kProjectConfigScriptFile)
     {
         auto path = getScriptFileRealPath();
@@ -470,7 +494,7 @@ vector<string> ProjectConfig::makeCommandLineVector(unsigned int mask /* = kProj
             ret.push_back(dealWithSpaceWithPath(path));
         }
     }
-    
+
     if (mask & kProjectConfigWritablePath)
     {
         auto path = getWritableRealPath();
@@ -480,18 +504,18 @@ vector<string> ProjectConfig::makeCommandLineVector(unsigned int mask /* = kProj
             ret.push_back(dealWithSpaceWithPath(path));
         }
     }
-    
+
     if (mask & kProjectConfigFrameSize)
     {
         buff.str("");
         buff << (int)getFrameSize().width;
         buff << "x";
         buff << (int)getFrameSize().height;
-        
+
         ret.push_back("-resolution");
         ret.push_back(buff.str());
     }
-    
+
     if (mask & kProjectConfigFrameScale)
     {
         if (getFrameScale() < 1.0f)
@@ -499,12 +523,12 @@ vector<string> ProjectConfig::makeCommandLineVector(unsigned int mask /* = kProj
             buff.str("");
             buff.precision(2);
             buff << getFrameScale();
-            
+
             ret.push_back("-scale");
             ret.push_back(buff.str());
         }
     }
-    
+
     if (mask & kProjectConfigWriteDebugLogToFile)
     {
         if (isWriteDebugLogToFile())
@@ -513,7 +537,7 @@ vector<string> ProjectConfig::makeCommandLineVector(unsigned int mask /* = kProj
             ret.push_back(getDebugLogFilePath());
         }
     }
-    
+
     if (mask & kProjectConfigShowConsole)
     {
         if (isShowConsole())
@@ -527,7 +551,7 @@ vector<string> ProjectConfig::makeCommandLineVector(unsigned int mask /* = kProj
             ret.push_back("disable");
         }
     }
-    
+
     if (mask & kProjectConfigWindowOffset)
     {
         if (_windowOffset.x != 0 && _windowOffset.y != 0)
@@ -537,12 +561,12 @@ vector<string> ProjectConfig::makeCommandLineVector(unsigned int mask /* = kProj
             buff << ",";
             buff << (int)_windowOffset.y;
             buff << "";
-            
+
             ret.push_back("-position");
             ret.push_back(buff.str());
         }
     }
-    
+
     if (mask & kProjectConfigDebugger)
     {
         switch (getDebuggerType())
@@ -557,7 +581,7 @@ vector<string> ProjectConfig::makeCommandLineVector(unsigned int mask /* = kProj
                 break;
         }
     }
-    
+
     if (mask & kProjectConfigListen)
     {
         if (!_bindAddress.empty())
@@ -566,7 +590,7 @@ vector<string> ProjectConfig::makeCommandLineVector(unsigned int mask /* = kProj
             ret.push_back(_bindAddress);
         }
     }
-    
+
     if (mask & kProjectConfigSearchPath)
     {
         if (_searchPath.size() > 0)
@@ -578,7 +602,7 @@ vector<string> ProjectConfig::makeCommandLineVector(unsigned int mask /* = kProj
             }
             string pathArgs = pathbuff.str();
             pathArgs[pathArgs.length()-1] = '\0';
-            
+
             ret.push_back("-search-path");
             ret.push_back(pathArgs);
         }
@@ -658,7 +682,7 @@ void ProjectConfig::setLanguageDataPath(const std::string &filePath)
     bool isBinary = true;
     string jsonExtension = ".json";
     int exLength = jsonExtension.length();
-    if (filePath.length() >= exLength && 
+    if (filePath.length() >= exLength &&
         (0 == filePath.compare(filePath.length() - exLength, exLength, jsonExtension)))
     {
         isBinary = false;
@@ -709,7 +733,7 @@ void ProjectConfig::dump()
     CCLOG("    write debug log: %s (%s)", _writeDebugLogToFile ? getDebugLogFilePath().c_str() : "NO",
                                           _writeDebugLogToFile ? getDebugLogFilePath().c_str() : "");
     CCLOG("    listen: %s", _bindAddress.c_str());
-    
+
     if (_debuggerType == kCCRuntimeDebuggerLDT)
     {
         CCLOG("    debugger: Eclipse LDT");
@@ -726,13 +750,13 @@ void ProjectConfig::dump()
     {
         CCLOG("    debugger: none");
     }
-    
+
     CCLOG("    add searching path:");
     for (auto &path : _searchPath)
     {
         CCLOG("        %s", path.c_str());
     }
-    
+
     CCLOG("\n\n");
 }
 
@@ -825,11 +849,11 @@ string ProjectConfig::replaceProjectDirToFullPath(const string &path) const
 
 bool ProjectConfig::isAbsolutePath(const string &path) const
 {
-    if (DIRECTORY_SEPARATOR_CHAR == '/')
-    {
-        return path.length() > 0 && path[0] == '/';
-    }
+#if defined(_WINDOWS)
     return path.length() > 2 && path[1] == ':';
+#else
+    return path.length() > 0 && path[0] == '/';
+#endif
 }
 
 string ProjectConfig::dealWithSpaceWithPath(const string &path) const

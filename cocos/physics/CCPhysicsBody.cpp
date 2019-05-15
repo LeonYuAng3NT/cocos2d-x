@@ -1,5 +1,6 @@
 /****************************************************************************
- Copyright (c) 2013 Chukong Technologies Inc.
+ Copyright (c) 2013-2016 Chukong Technologies Inc.
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
  
  http://www.cocos2d-x.org
  
@@ -96,11 +97,11 @@ PhysicsBody::PhysicsBody()
 , _linearDamping(0.0f)
 , _angularDamping(0.0f)
 , _tag(0)
+, _massSetByUser(false)
+, _momentSetByUser(false)
 , _rotationOffset(0)
 , _recordedRotation(0.0f)
 , _recordedAngle(0.0)
-, _massSetByUser(false)
-, _momentSetByUser(false)
 , _recordScaleX(1.f)
 , _recordScaleY(1.f)
 {
@@ -109,10 +110,8 @@ PhysicsBody::PhysicsBody()
 
 PhysicsBody::~PhysicsBody()
 {
-    for (auto it = _joints.begin(); it != _joints.end(); ++it)
+    for (auto& joint : _joints)
     {
-        PhysicsJoint* joint = *it;
-        
         PhysicsBody* other = joint->getBodyA() == this ? joint->getBodyB() : joint->getBodyA();
         other->removeJoint(joint);
         delete joint;
@@ -349,7 +348,7 @@ void PhysicsBody::setRotation(float rotation)
 
 void PhysicsBody::setScale(float scaleX, float scaleY)
 {
-    for (auto shape : _shapes)
+    for (auto& shape : _shapes)
     {
         _area -= shape->getArea();
         if (!_massSetByUser)
@@ -577,12 +576,12 @@ void PhysicsBody::addMoment(float moment)
 
 void PhysicsBody::setVelocity(const Vec2& velocity)
 {
-    if (!_dynamic)
+    if (cpBodyGetType(_cpBody) == CP_BODY_TYPE_STATIC)
     {
-        CCLOG("physics warning: your can't set velocity for a static body.");
+        CCLOG("physics warning: you can't set velocity for a static body.");
         return;
     }
-    
+
     cpBodySetVelocity(_cpBody, PhysicsHelper::point2cpv(velocity));
 }
 
@@ -603,12 +602,12 @@ Vec2 PhysicsBody::getVelocityAtWorldPoint(const Vec2& point)
 
 void PhysicsBody::setAngularVelocity(float velocity)
 {
-    if (!_dynamic)
+    if (cpBodyGetType(_cpBody) == CP_BODY_TYPE_STATIC)
     {
-        CCLOG("physics warning: your can't set angular velocity for a static body.");
+        CCLOG("physics warning: you can't set angular velocity for a static body.");
         return;
     }
-    
+
     cpBodySetAngularVelocity(_cpBody, velocity);
 }
 
@@ -755,7 +754,7 @@ void PhysicsBody::setEnabled(bool enable)
 
 bool PhysicsBody::isResting() const
 {
-    return cpBodyIsSleeping(_cpBody);
+    return cpBodyIsSleeping(_cpBody) != cpFalse;
 }
 
 void PhysicsBody::setResting(bool rest) const
@@ -773,12 +772,12 @@ void PhysicsBody::setResting(bool rest) const
 void PhysicsBody::update(float delta)
 {
     // damping compute
-    /*if (_isDamping && _dynamic && !isResting())
+    if (_isDamping && _dynamic && !isResting())
     {
         _cpBody->v.x *= cpfclamp(1.0f - delta * _linearDamping, 0.0f, 1.0f);
         _cpBody->v.y *= cpfclamp(1.0f - delta * _linearDamping, 0.0f, 1.0f);
         _cpBody->w *= cpfclamp(1.0f - delta * _angularDamping, 0.0f, 1.0f);
-    }*/
+    }
 }
 
 void PhysicsBody::setCategoryBitmask(int bitmask)
@@ -941,8 +940,8 @@ void PhysicsBody::onAdd()
 {
     _owner->_physicsBody = this;
     auto contentSize = _owner->getContentSize();
-    _ownerCenterOffset.x = 0.5 * contentSize.width;
-    _ownerCenterOffset.y = 0.5 * contentSize.height;
+    _ownerCenterOffset.x = 0.5f * contentSize.width;
+    _ownerCenterOffset.y = 0.5f * contentSize.height;
 
     setRotationOffset(_owner->getRotation());
 
@@ -953,7 +952,11 @@ void PhysicsBody::onAdd()
 
 void PhysicsBody::onRemove()
 {
+    CCASSERT(_owner != nullptr, "_owner can't be nullptr");
+
     removeFromPhysicsWorld();
+
+    _owner->_physicsBody = nullptr;
 }
 
 void PhysicsBody::addToPhysicsWorld()
@@ -968,10 +971,11 @@ void PhysicsBody::addToPhysicsWorld()
 
 void PhysicsBody::removeFromPhysicsWorld()
 {
-    if (_world)
+    if (_owner)
     {
-        _world->removeBody(this);
-        _world = nullptr;
+        auto scene = _owner->getScene();
+        if (scene)
+            scene->getPhysicsWorld()->removeBody(this);
     }
 }
 

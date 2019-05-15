@@ -1,6 +1,7 @@
 /****************************************************************************
  Copyright (c) 2012      cocos2d-x.org
- Copyright (c) 2013-2014 Chukong Technologies Inc.
+ Copyright (c) 2013-2016 Chukong Technologies Inc.
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
  http://www.cocos2d-x.org
 
@@ -25,19 +26,18 @@
 
 #include "scripting/lua-bindings/manual/CCLuaEngine.h"
 #include "scripting/lua-bindings/manual/tolua_fix.h"
-#include "cocos2d.h"
+
 #include "extensions/GUI/CCControlExtension/CCControl.h"
 #include "scripting/lua-bindings/manual/cocos2d/LuaOpengl.h"
 #include "scripting/lua-bindings/manual/cocos2d/lua_cocos2dx_manual.hpp"
 #include "scripting/lua-bindings/manual/extension/lua_cocos2dx_extension_manual.h"
 #include "scripting/lua-bindings/manual/cocostudio/lua_cocos2dx_coco_studio_manual.hpp"
 #include "scripting/lua-bindings/manual/ui/lua_cocos2dx_ui_manual.hpp"
+#include "2d/CCMenuItem.h"
+#include "base/CCDirector.h"
+#include "base/CCEventCustom.h"
 
-#if _MSC_VER > 1800
-#pragma comment(lib,"lua51-2015.lib")
-#else
 #pragma comment(lib,"lua51.lib")
-#endif
 
 NS_CC_BEGIN
 
@@ -392,7 +392,7 @@ int LuaEngine::handleKeypadEvent(void* data)
 
     switch(action)
     {
-        case EventKeyboard::KeyCode::KEY_BACKSPACE:
+        case EventKeyboard::KeyCode::KEY_ESCAPE:
 			_stack->pushString("backClicked");
 			break;
 		case EventKeyboard::KeyCode::KEY_MENU:
@@ -435,14 +435,14 @@ int LuaEngine::handleCommonEvent(void* data)
     if (NULL == data)
         return 0;
    
-    CommonScriptData* commonInfo = static_cast<CommonScriptData*>(data);
-    if (NULL == commonInfo->eventName || 0 == commonInfo->handler)
+    CommonScriptData* commonInfo = static_cast<CommonScriptData*>(data); 
+    if (0 == commonInfo->handler)
         return 0;
     
     _stack->pushString(commonInfo->eventName);
     if (NULL != commonInfo->eventSource)
     {
-        if (NULL  != commonInfo->eventSourceClassName && strlen(commonInfo->eventSourceClassName) > 0)
+        if (strlen(commonInfo->eventSourceClassName) > 0)
         {
             _stack->pushObject(commonInfo->eventSource, commonInfo->eventSourceClassName);
         }
@@ -511,7 +511,7 @@ int LuaEngine::handleTouchesEvent(void* data)
         return 0;
     
     TouchesScriptData* touchesScriptData = static_cast<TouchesScriptData*>(data);
-    if (NULL == touchesScriptData->nativeObject || touchesScriptData->touches.size() == 0)
+    if (NULL == touchesScriptData->nativeObject || touchesScriptData->touches.empty())
         return 0;
     
     int handler = ScriptHandlerMgr::getInstance()->getObjectHandler((void*)touchesScriptData->nativeObject, ScriptHandlerMgr::HandlerType::TOUCHES);
@@ -687,7 +687,7 @@ int LuaEngine::handleEventTouches(ScriptHandlerMgr::HandlerType type,void* data)
         return 0;
     
     LuaEventTouchesData * touchesData = static_cast<LuaEventTouchesData*>(basicScriptData->value);
-    if (nullptr == touchesData->event || touchesData->touches.size() == 0)
+    if (nullptr == touchesData->event || touchesData->touches.empty())
         return 0;
     
     int handler = ScriptHandlerMgr::getInstance()->getObjectHandler((void*)basicScriptData->nativeObject, type);

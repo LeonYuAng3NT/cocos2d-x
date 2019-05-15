@@ -1,5 +1,6 @@
 /****************************************************************************
- Copyright (c) 2013-2014 Chukong Technologies Inc.
+ Copyright (c) 2013-2016 Chukong Technologies Inc.
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
  http://www.cocos2d-x.org
 
@@ -33,6 +34,23 @@
 #include "renderer/CCRenderCommand.h"
 #include "renderer/CCGLProgram.h"
 #include "platform/CCGL.h"
+
+#if !defined(NDEBUG) && CC_TARGET_PLATFORM == CC_PLATFORM_IOS
+
+/// Basic wrapper for glInsertEventMarkerEXT() depending on the current build settings and platform.
+#define CCGL_DEBUG_INSERT_EVENT_MARKER(__message__) glInsertEventMarkerEXT(0, __message__)
+/// Basic wrapper for glPushGroupMarkerEXT() depending on the current build settings and platform.
+#define CCGL_DEBUG_PUSH_GROUP_MARKER(__message__) glPushGroupMarkerEXT(0, __message__)
+/// Basic wrapper for CCGL_DEBUG_POP_GROUP_MARKER() depending on the current build settings and platform.
+#define CCGL_DEBUG_POP_GROUP_MARKER() glPopGroupMarkerEXT()
+
+#else
+
+#define CCGL_DEBUG_INSERT_EVENT_MARKER(__message__)
+#define CCGL_DEBUG_PUSH_GROUP_MARKER(__message__)
+#define CCGL_DEBUG_POP_GROUP_MARKER()
+
+#endif
 
 /**
  * @addtogroup renderer
@@ -86,9 +104,9 @@ public:
     /**Realloc command queues and reserve with given size. Note: this clears any existing commands.*/
     void realloc(size_t reserveSize);
     /**Get a sub group of the render queue.*/
-    inline std::vector<RenderCommand*>& getSubQueue(QUEUE_GROUP group) { return _commands[group]; }
+    std::vector<RenderCommand*>& getSubQueue(QUEUE_GROUP group) { return _commands[group]; }
     /**Get the number of render commands contained in a subqueue.*/
-    inline ssize_t getSubQueueSize(QUEUE_GROUP group) const { return _commands[group].size();}
+    ssize_t getSubQueueSize(QUEUE_GROUP group) const { return _commands[group].size(); }
 
     /**Save the current DepthState, CullState, DepthWriteState render state.*/
     void saveRenderState();
@@ -127,8 +145,8 @@ public:
     static const int VBO_SIZE = 65536;
     /**The max number of indices in a index buffer.*/
     static const int INDEX_VBO_SIZE = VBO_SIZE * 6 / 4;
-    /**The rendercommands which can be batched will be saved into a list, this is the reversed size of this list.*/
-    static const int BATCH_TRIAGCOMMAND_RESEVER_SIZE = 64;
+    /**The rendercommands which can be batched will be saved into a list, this is the reserved size of this list.*/
+    static const int BATCH_TRIAGCOMMAND_RESERVED_SIZE = 64;
     /**Reserved for material id, which means that the command could not be batched.*/
     static const int MATERIAL_ID_DO_NOT_BATCH = 0;
     /**Constructor.*/
@@ -143,7 +161,7 @@ public:
     void addCommand(RenderCommand* command);
 
     /** Adds a `RenderComamnd` into the renderer specifying a particular render queue ID */
-    void addCommand(RenderCommand* command, int renderQueue);
+    void addCommand(RenderCommand* command, int renderQueueID);
 
     /** Pushes a group into the render queue */
     void pushGroup(int renderQueueID);
@@ -165,6 +183,8 @@ public:
 
     /** set color for clear screen */
     void setClearColor(const Color4F& clearColor);
+    /** get color for clear screen */
+    const Color4F& getClearColor() const { return _clearColor; };
     /* returns the number of drawn batches in the last frame */
     ssize_t getDrawnBatches() const { return _drawnBatches; }
     /* RenderCommands (except) TrianglesCommand should update this value */
@@ -184,7 +204,7 @@ public:
     void setDepthTest(bool enable);
     
     //This will not be used outside.
-    inline GroupCommandManager* getGroupCommandManager() const { return _groupCommandManager; };
+    GroupCommandManager* getGroupCommandManager() const { return _groupCommandManager; }
 
     /** returns whether or not a rectangle is visible or not */
     bool checkVisibility(const Mat4& transform, const Size& size);
@@ -232,8 +252,8 @@ protected:
     // Internal structure that has the information for the batches
     struct TriBatchToDraw {
         TrianglesCommand* cmd;  // needed for the Material
-        GLushort indicesToDraw;
-        GLushort offset;
+        GLsizei indicesToDraw;
+        GLsizei offset;
     };
     // capacity of the array of TriBatches
     int _triBatchesToDrawCapacity;

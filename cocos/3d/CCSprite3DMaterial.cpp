@@ -1,5 +1,6 @@
 /****************************************************************************
- Copyright (c) 2014 Chukong Technologies Inc.
+ Copyright (c) 2014-2016 Chukong Technologies Inc.
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
  http://www.cocos2d-x.org
 
@@ -214,7 +215,7 @@ Sprite3DMaterial* Sprite3DMaterial::createBuiltInMaterial(MaterialType type, boo
 Sprite3DMaterial* Sprite3DMaterial::createWithFilename(const std::string& path)
 {
     auto validfilename = FileUtils::getInstance()->fullPathForFilename(path);
-    if (validfilename.size() > 0) {
+    if (!validfilename.empty()) {
         auto it = _materials.find(validfilename);
         if (it != _materials.end())
             return (Sprite3DMaterial*)it->second->clone();
@@ -310,20 +311,20 @@ Texture2D* Sprite3DMaterialCache::getSprite3DMaterial(const std::string& key)
 
 void Sprite3DMaterialCache::removeAllSprite3DMaterial()
 {
-    for (auto itr = _materials.begin(); itr != _materials.end(); itr++) {
-        CC_SAFE_RELEASE_NULL(itr->second);
+    for (auto& itr : _materials) {
+        CC_SAFE_RELEASE_NULL(itr.second);
     }
     _materials.clear();
 }
 void Sprite3DMaterialCache::removeUnusedSprite3DMaterial()
 {
-    for( auto it=_materials.cbegin(); it!=_materials.cend(); /* nothing */) {
+    for(auto it=_materials.cbegin(), itCend = _materials.cend(); it != itCend; /* nothing */) {
         auto value = it->second;
         if( value->getReferenceCount() == 1 ) {
             CCLOG("cocos2d: GLProgramStateCache: removing unused GLProgramState");
             
             value->release();
-            _materials.erase(it++);
+            it = _materials.erase(it);
         } else {
             ++it;
         }

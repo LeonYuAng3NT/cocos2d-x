@@ -1,6 +1,7 @@
 /****************************************************************************
  Copyright (c) 2014 cocos2d-x.org
- Copyright (c) 2014 Chukong Technologies Inc.
+ Copyright (c) 2014-2016 Chukong Technologies Inc.
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
  http://www.cocos2d-x.org
 
@@ -29,6 +30,7 @@
 #include "platform/CCPlatformMacros.h"
 #include <vector>
 #include <string>
+#include <sstream>
 
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID) 
 #include "platform/android/jni/JniHelper.h"
@@ -38,12 +40,37 @@ NS_CC_BEGIN
 
 namespace StringUtils {
 
+namespace UnicodeCharacters {
+    const char32_t NewLine                = 0x000A; // 10
+    const char32_t CarriageReturn         = 0x000D; // 13
+    const char32_t NextCharNoChangeX      = 0x0008; // 8
+    const char32_t Space                  = 0x0020; // 32
+    const char32_t NoBreakSpace           = 0x00A0; // 160
+}
+
+namespace AsciiCharacters {
+    const char NewLine                    = '\n';
+    const char CarriageReturn             = '\r';
+    const char NextCharNoChangeX          = '\b';
+    const char Space                      = ' ';
+}
+
+template<typename T>
+std::string toString(T arg)
+{
+    std::stringstream ss;
+    ss << arg;
+    return ss.str();
+}
+
+std::string CC_DLL format(const char* format, ...) CC_FORMAT_PRINTF(1, 2);
+
 /**
  *  @brief Converts from UTF8 string to UTF16 string.
  *
  *  This function resizes \p outUtf16 to required size and
- *  fill its contents with result UTF16 string if convertion success.
- *  If convertion fails it guarantees not to change \p outUtf16.
+ *  fill its contents with result UTF16 string if conversion success.
+ *  If conversion fails it guarantees not to change \p outUtf16.
  *
  *  @param inUtf8 The source UTF8 string to be converted from.
  *  @param outUtf16 The output string to hold the result UTF16s.
@@ -118,13 +145,18 @@ CC_DLL std::string getStringUTFCharsJNI(JNIEnv* env, jstring srcjStr, bool* ret 
 *  @param ret     True if the conversion succeeds and the ret pointer isn't null
 *  @returns the result of jstring,the jstring need to DeleteLocalRef(jstring);
 */
-CC_DLL jstring newStringUTFJNI(JNIEnv* env, std::string utf8Str, bool* ret = nullptr);
+CC_DLL jstring newStringUTFJNI(JNIEnv* env, const std::string& utf8Str, bool* ret = nullptr);
 #endif
 
 /**
  *  @brief Trims the unicode spaces at the end of char16_t vector.
  */
 CC_DLL void trimUTF16Vector(std::vector<char16_t>& str);
+    
+/**
+ *  @brief Trims the unicode spaces at the end of char32_t vector.
+ */
+CC_DLL void trimUTF32Vector(std::vector<char32_t>& str);
 
 /**
  *  @brief Whether the character is a whitespace character.
@@ -134,7 +166,7 @@ CC_DLL void trimUTF16Vector(std::vector<char16_t>& str);
  *  @see http://en.wikipedia.org/wiki/Whitespace_character#Unicode
  *
  */
-CC_DLL bool isUnicodeSpace(char16_t ch);
+CC_DLL bool isUnicodeSpace(char32_t ch);
 
 /**
  *  @brief Whether the character is a Chinese/Japanese/Korean character.
@@ -145,8 +177,21 @@ CC_DLL bool isUnicodeSpace(char16_t ch);
  *  @see http://tieba.baidu.com/p/748765987
  *
  */
-CC_DLL bool isCJKUnicode(char16_t ch);
-
+CC_DLL bool isCJKUnicode(char32_t ch);
+    
+/**
+ *  @brief Whether the character is a non-breaking character.
+ *  @param ch    The unicode character.
+ *  @returns     Whether the character is a non-breaking character.
+ *
+ *  @see https://en.wikipedia.org/wiki/Space_(punctuation)#Spaces_in_Unicode
+ *  @see https://en.wikipedia.org/wiki/Non-breaking_space
+ *  @see https://en.wikipedia.org/wiki/Figure_space
+ *  @see https://en.wikipedia.org/wiki/Word_joiner
+ *
+ */
+CC_DLL bool isUnicodeNonBreaking(char32_t ch);
+    
 /**
  *  @brief Returns the length of the string in characters.
  *  @param utf8 An UTF-8 encoded string.
@@ -180,7 +225,7 @@ public:
     struct CharUTF8
     {
         std::string _char;
-        bool isAnsi() { return _char.size() == 1; }
+        bool isASCII() const { return _char.size() == 1; }
     };
     typedef std::vector<CharUTF8> CharUTF8Store;
 
@@ -192,12 +237,15 @@ public:
     void replace(const std::string& newStr);
 
     std::string getAsCharSequence() const;
+    std::string getAsCharSequence(std::size_t pos) const;
+    std::string getAsCharSequence(std::size_t pos, std::size_t len) const;
 
     bool deleteChar(std::size_t pos);
     bool insert(std::size_t pos, const std::string& insertStr);
     bool insert(std::size_t pos, const StringUTF8& insertStr);
 
     CharUTF8Store& getString() { return _str; }
+    const CharUTF8Store& getString() const { return _str; }
 
 private:
     CharUTF8Store _str;

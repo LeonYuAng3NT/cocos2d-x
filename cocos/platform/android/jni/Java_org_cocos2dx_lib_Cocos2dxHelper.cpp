@@ -1,6 +1,7 @@
 /****************************************************************************
 Copyright (c) 2010-2012 cocos2d-x.org
-Copyright (c) 2013-2014 Chukong Technologies Inc.
+Copyright (c) 2013-2016 Chukong Technologies Inc.
+Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
 http://www.cocos2d-x.org
 
@@ -29,7 +30,6 @@ THE SOFTWARE.
 #include "platform/android/jni/JniHelper.h"
 #include "platform/android/CCFileUtils-android.h"
 #include "android/asset_manager_jni.h"
-#include "deprecated/CCString.h"
 #include "platform/android/jni/Java_org_cocos2dx_lib_Cocos2dxHelper.h"
 
 #include "base/ccUTF8.h"
@@ -37,25 +37,30 @@ THE SOFTWARE.
 #define  LOG_TAG    "Java_org_cocos2dx_lib_Cocos2dxHelper.cpp"
 #define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
 
-static const std::string className = "org/cocos2dx/lib/Cocos2dxHelper";
+static const std::string className = "org.cocos2dx.lib.Cocos2dxHelper";
 
 static EditTextCallback s_editTextCallback = nullptr;
 static void* s_ctx = nullptr;
 
+static int __deviceSampleRate = 44100;
+static int __deviceAudioBufferSizeInFrames = 192;
+
+static std::string g_apkPath;
+
 using namespace cocos2d;
 using namespace std;
 
-string g_apkPath;
-
 extern "C" {
-
-    JNIEXPORT void JNICALL Java_org_cocos2dx_lib_Cocos2dxHelper_nativeSetApkPath(JNIEnv*  env, jobject thiz, jstring apkPath) {
-        g_apkPath = JniHelper::jstring2string(apkPath);
-    }
 
     JNIEXPORT void JNICALL Java_org_cocos2dx_lib_Cocos2dxHelper_nativeSetContext(JNIEnv*  env, jobject thiz, jobject context, jobject assetManager) {
         JniHelper::setClassLoaderFrom(context);
         FileUtilsAndroid::setassetmanager(AAssetManager_fromJava(env, assetManager));
+    }
+
+    JNIEXPORT void JNICALL Java_org_cocos2dx_lib_Cocos2dxHelper_nativeSetAudioDeviceInfo(JNIEnv*  env, jobject thiz, jboolean isSupportLowLatency, jint deviceSampleRate, jint deviceAudioBufferSizeInFrames) {
+        __deviceSampleRate = deviceSampleRate;
+        __deviceAudioBufferSizeInFrames = deviceAudioBufferSizeInFrames;
+        LOGD("nativeSetAudioDeviceInfo: sampleRate: %d, bufferSizeInFrames: %d", __deviceSampleRate, __deviceAudioBufferSizeInFrames);
     }
 
     JNIEXPORT void JNICALL Java_org_cocos2dx_lib_Cocos2dxHelper_nativeSetEditTextDialogResult(JNIEnv * env, jobject obj, jbyteArray text) {
@@ -80,11 +85,51 @@ extern "C" {
 }
 
 const char * getApkPath() {
+    if (g_apkPath.empty())
+    {
+        g_apkPath = JniHelper::callStaticStringMethod(className, "getAssetsPath");
+    }
+
     return g_apkPath.c_str();
 }
 
 std::string getPackageNameJNI() {
     return JniHelper::callStaticStringMethod(className, "getCocos2dxPackageName");
+}
+
+int getObbAssetFileDescriptorJNI(const char* path, long* startOffset, long* size) {
+    JniMethodInfo methodInfo;
+    int fd = 0;
+    
+    if (JniHelper::getStaticMethodInfo(methodInfo, className.c_str(), "getObbAssetFileDescriptor", "(Ljava/lang/String;)[J")) {
+        jstring stringArg = methodInfo.env->NewStringUTF(path);
+        jlongArray newArray = (jlongArray)methodInfo.env->CallStaticObjectMethod(methodInfo.classID, methodInfo.methodID, stringArg);
+        jsize theArrayLen = methodInfo.env->GetArrayLength(newArray);
+        
+        if (theArrayLen == 3) {
+            jboolean copy = JNI_FALSE;
+            jlong *array = methodInfo.env->GetLongArrayElements(newArray, &copy);
+            fd = static_cast<int>(array[0]);
+            *startOffset = array[1];
+            *size = array[2];
+            methodInfo.env->ReleaseLongArrayElements(newArray, array, 0);
+        }
+        
+        methodInfo.env->DeleteLocalRef(methodInfo.classID);
+        methodInfo.env->DeleteLocalRef(stringArg);
+    }
+    
+    return fd;
+}
+
+int getDeviceSampleRate()
+{
+    return __deviceSampleRate;
+}
+
+int getDeviceAudioBufferSizeInFrames()
+{
+    return __deviceAudioBufferSizeInFrames;
 }
 
 void conversionEncodingJNI(const char* src, int byteSize, const char* fromCharset, char* dst, const char* newCharset)
@@ -105,6 +150,7 @@ void conversionEncodingJNI(const char* src, int byteSize, const char* fromCharse
         methodInfo.env->DeleteLocalRef(strArray);
         methodInfo.env->DeleteLocalRef(stringArg1);
         methodInfo.env->DeleteLocalRef(stringArg2);
+        methodInfo.env->DeleteLocalRef(newArray);
         methodInfo.env->DeleteLocalRef(methodInfo.classID);
     }
 }

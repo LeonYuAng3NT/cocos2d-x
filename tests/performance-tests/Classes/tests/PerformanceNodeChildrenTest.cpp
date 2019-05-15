@@ -1,3 +1,27 @@
+/****************************************************************************
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
+ 
+ http://www.cocos2d-x.org
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ 
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
+ ****************************************************************************/
+
 #include "PerformanceNodeChildrenTest.h"
 #include "Profile.h"
 #include <algorithm>
@@ -150,7 +174,7 @@ void NodeChildrenMainScene::dumpProfilerInfo(float dt)
 
 void NodeChildrenMainScene::initWithQuantityOfNodes(unsigned int nNodes)
 {
-    //srand(time());
+    //std::srand(time());
     auto s = Director::getInstance()->getWinSize();
 
     lastRenderedCount = 0;
@@ -167,7 +191,7 @@ void NodeChildrenMainScene::initWithQuantityOfNodes(unsigned int nNodes)
 		updateQuantityOfNodes();
         updateProfilerName();
         CC_PROFILER_PURGE_ALL();
-        srand(0);
+        std::srand(0);
 	});
     decrease->setColor(Color3B(0,200,20));
     auto increase = MenuItemFont::create(" + ", [&](Ref *sender) {
@@ -179,7 +203,7 @@ void NodeChildrenMainScene::initWithQuantityOfNodes(unsigned int nNodes)
 		updateQuantityOfNodes();
         updateProfilerName();
         CC_PROFILER_PURGE_ALL();
-        srand(0);        
+        std::srand(0);
 	});
     increase->setColor(Color3B(0,200,20));
 
@@ -196,7 +220,7 @@ void NodeChildrenMainScene::initWithQuantityOfNodes(unsigned int nNodes)
     updateQuantityLabel();
     updateQuantityOfNodes();
     updateProfilerName();
-    srand(0);
+    std::srand(0);
 }
 
 std::string NodeChildrenMainScene::title() const

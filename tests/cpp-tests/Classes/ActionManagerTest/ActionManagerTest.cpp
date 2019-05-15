@@ -1,3 +1,27 @@
+/****************************************************************************
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
+ 
+ http://www.cocos2d-x.org
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ 
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
+ ****************************************************************************/
+
 #include "ActionManagerTest.h"
 #include "../testResource.h"
 #include "cocos2d.h"
@@ -20,6 +44,7 @@ ActionManagerTests::ActionManagerTests()
     ADD_TEST_CASE(StopAllActionsTest);
     ADD_TEST_CASE(StopActionsByFlagsTest);
     ADD_TEST_CASE(ResumeTest);
+    ADD_TEST_CASE(Issue14050Test);
 }
 
 //------------------------------------------------------------------
@@ -341,4 +366,39 @@ void StopActionsByFlagsTest::stopAction(float time)
 std::string StopActionsByFlagsTest::subtitle() const
 {
     return "Stop All Actions By Flags Test";
+}
+
+//------------------------------------------------------------------
+//
+// Issue14050Test
+//
+//------------------------------------------------------------------
+class SpriteIssue14050: public Sprite
+{
+public:
+    SpriteIssue14050()
+    {
+        log("SpriteIssue14050::constructor");
+    }
+    virtual ~SpriteIssue14050()
+    {
+        log("SpriteIssue14050::destructor");
+    }
+};
+
+void Issue14050Test::onEnter()
+{
+    ActionManagerTest::onEnter();
+
+    auto sprite = new (std::nothrow) SpriteIssue14050;
+    sprite->initWithFile("Images/grossini.png");
+    sprite->autorelease();
+
+    auto move = MoveBy::create(2, Vec2(100, 100));
+    sprite->runAction(move);
+}
+
+std::string Issue14050Test::subtitle() const
+{
+    return "Issue14050. Sprite should not leak.";
 }

@@ -1,6 +1,7 @@
 /* Copyright (c) 2012 Scott Lembcke and Howling Moon Software
  * Copyright (c) 2012 cocos2d-x.org
- * Copyright (c) 2013-2014 Chukong Technologies Inc.
+ * Copyright (c) 2013-2016 Chukong Technologies Inc.
+ * Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -76,11 +77,6 @@ static inline float v2fdot(const Vec2 &p0, const Vec2 &p1)
     return  p0.x * p1.x + p0.y * p1.y;
 }
 
-static inline Vec2 v2fforangle(float _a_)
-{
-    return v2f(cosf(_a_), sinf(_a_));
-}
-
 static inline Vec2 v2fnormalize(const Vec2 &p)
 {
     Vec2 r(p.x, p.y);
@@ -102,31 +98,136 @@ static inline Tex2F __t(const Vec2 &v)
     return *(Tex2F*)&v;
 }
 
+static const float EPSILON=0.0000000001f;
+float Triangulate::computeArea(const Vec2 *verts,int n)
+{
+    float A=0.0f;
+    for(int p=n-1,q=0; q<n; p=q++)
+    {
+        A+= verts[p].x*verts[q].y - verts[q].x*verts[p].y;
+    }
+    return A*0.5f;
+}
+
+/*
+ isInsideTriangle decides if a point P is Inside of the triangle
+ defined by A, B, C.
+ */
+bool Triangulate::isInsideTriangle(float Ax, float Ay,
+                                 float Bx, float By,
+                                 float Cx, float Cy,
+                                 float Px, float Py)
+
+{
+    float ax, ay, bx, by, cx, cy, apx, apy, bpx, bpy, cpx, cpy;
+    float cCROSSap, bCROSScp, aCROSSbp;
+    ax = Cx - Bx;  ay = Cy - By;
+    bx = Ax - Cx;  by = Ay - Cy;
+    cx = Bx - Ax;  cy = By - Ay;
+    apx= Px - Ax;  apy= Py - Ay;
+    bpx= Px - Bx;  bpy= Py - By;
+    cpx= Px - Cx;  cpy= Py - Cy;
+    
+    aCROSSbp = ax*bpy - ay*bpx;
+    cCROSSap = cx*apy - cy*apx;
+    bCROSScp = bx*cpy - by*cpx;
+    
+    return ((aCROSSbp >= 0.0f) && (bCROSScp >= 0.0f) && (cCROSSap >= 0.0f));
+};
+
+bool Triangulate::checkSnip(const Vec2 *verts,int u,int v,int w,int n,int *V)
+{
+    int p;
+    float Ax, Ay, Bx, By, Cx, Cy, Px, Py;
+    
+    Ax = verts[V[u]].x;
+    Ay = verts[V[u]].y;
+    
+    Bx = verts[V[v]].x;
+    By = verts[V[v]].y;
+    
+    Cx = verts[V[w]].x;
+    Cy = verts[V[w]].y;
+    
+    if ( EPSILON > (((Bx-Ax)*(Cy-Ay)) - ((By-Ay)*(Cx-Ax))) ) return false;
+    
+    for (p=0;p<n;p++)
+    {
+        if( (p == u) || (p == v) || (p == w) ) continue;
+        Px = verts[V[p]].x;
+        Py = verts[V[p]].y;
+        if (isInsideTriangle(Ax,Ay,Bx,By,Cx,Cy,Px,Py)) return false;
+    }
+    
+    return true;
+}
+
+V2F_C4B_T2F_Triangle * Triangulate::processTriangles(const Vec2 *verts,V2F_C4B_T2F_Triangle * triangles,int n,const Color4F &fillColor)
+{
+    if ( n < 3 ) return triangles;
+    
+    int *V = new int[n];
+    /* we want a counter-clockwise polygon in V */
+    if ( 0.0f < computeArea(verts,n) )
+        for (int v=0; v<n; v++) V[v] = v;
+    else
+        for(int v=0; v<n; v++) V[v] = (n-1)-v;
+    
+    int nv = n;
+    /*  remove nv-2 Vertices, creating 1 triangle every time */
+    int count = 2*nv;   /* error detection */
+    for(int m=0, v=nv-1; nv>2; )
+    {
+        /* if we loop, it is probably a non-simple polygon */
+        if (0 >= (count--))
+        {
+            //** Triangulate: ERROR - probable bad polygon!
+            return triangles;
+        }
+        /* three consecutive vertices in current polygon, <u,v,w> */
+        int u = v  ; if (nv <= u) u = 0;     /* previous */
+        v = u+1; if (nv <= v) v = 0;     /* new v    */
+        int w = v+1; if (nv <= w) w = 0;     /* next     */
+        
+        if ( checkSnip(verts,u,v,w,nv,V) )
+        {
+            int a,b,c,s,t;
+            /* true names of the vertices */
+            a = V[u]; b = V[v]; c = V[w];
+            
+            V2F_C4B_T2F_Triangle tmp = {
+                {verts[a], Color4B(fillColor), __t(v2fzero)},
+                {verts[b], Color4B(fillColor), __t(v2fzero)},
+                {verts[c], Color4B(fillColor), __t(v2fzero)},
+            };
+            *triangles++ = tmp;
+            m++;
+            /* remove v from remaining polygon */
+            for(s=v,t=v+1;t<nv;s++,t++) V[s] = V[t]; nv--;
+            /* resest error detection counter */
+            count = 2*nv;
+        }
+    }
+    delete []V;
+    return triangles;
+}
+
 // implementation of DrawNode
 
-DrawNode::DrawNode(int lineWidth)
-: _vao(0)
-, _vbo(0)
-, _vaoGLPoint(0)
-, _vboGLPoint(0)
-, _vaoGLLine(0)
-, _vboGLLine(0)
-, _bufferCapacity(0)
-, _bufferCount(0)
-, _buffer(nullptr)
-, _bufferCapacityGLPoint(0)
-, _bufferCountGLPoint(0)
-, _bufferGLPoint(nullptr)
-, _bufferCapacityGLLine(0)
-, _bufferCountGLLine(0)
-, _bufferGLLine(nullptr)
-, _dirty(false)
-, _dirtyGLPoint(false)
-, _dirtyGLLine(false)
-, _lineWidth(lineWidth)
+DrawNode::DrawNode(GLfloat lineWidth)
+: _lineWidth(lineWidth)
 , _defaultLineWidth(lineWidth)
 {
     _blendFunc = BlendFunc::ALPHA_PREMULTIPLIED;
+#if CC_ENABLE_CACHE_TEXTURE_DATA
+    // Need to listen the event only when not use batchnode, because it will use VBO
+    auto listener = EventListenerCustom::create(EVENT_RENDERER_RECREATED, [this](EventCustom* event){
+        /** listen the event that renderer was recreated on Android/WP8 */
+        this->setupBuffer();
+    });
+
+    _eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
+#endif
 }
 
 DrawNode::~DrawNode()
@@ -155,7 +256,7 @@ DrawNode::~DrawNode()
     }
 }
 
-DrawNode* DrawNode::create(int defaultLineWidth)
+DrawNode* DrawNode::create(GLfloat defaultLineWidth)
 {
     DrawNode* ret = new (std::nothrow) DrawNode(defaultLineWidth);
     if (ret && ret->init())
@@ -203,16 +304,8 @@ void DrawNode::ensureCapacityGLLine(int count)
     }
 }
 
-bool DrawNode::init()
+void DrawNode::setupBuffer()
 {
-    _blendFunc = BlendFunc::ALPHA_PREMULTIPLIED;
-
-    setGLProgramState(GLProgramState::getOrCreateWithGLProgramName(GLProgram::SHADER_NAME_POSITION_LENGTH_TEXTURE_COLOR));
-    
-    ensureCapacity(512);
-    ensureCapacityGLPoint(64);
-    ensureCapacityGLLine(256);
-    
     if (Configuration::getInstance()->supportsShareableVAO())
     {
         glGenVertexArrays(1, &_vao);
@@ -226,10 +319,10 @@ bool DrawNode::init()
         // color
         glEnableVertexAttribArray(GLProgram::VERTEX_ATTRIB_COLOR);
         glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(V2F_C4B_T2F), (GLvoid *)offsetof(V2F_C4B_T2F, colors));
-        // texcood
+        // texcoord
         glEnableVertexAttribArray(GLProgram::VERTEX_ATTRIB_TEX_COORD);
         glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, sizeof(V2F_C4B_T2F), (GLvoid *)offsetof(V2F_C4B_T2F, texCoords));
-        
+
         glGenVertexArrays(1, &_vaoGLLine);
         GL::bindVAO(_vaoGLLine);
         glGenBuffers(1, &_vboGLLine);
@@ -241,10 +334,10 @@ bool DrawNode::init()
         // color
         glEnableVertexAttribArray(GLProgram::VERTEX_ATTRIB_COLOR);
         glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(V2F_C4B_T2F), (GLvoid *)offsetof(V2F_C4B_T2F, colors));
-        // texcood
+        // texcoord
         glEnableVertexAttribArray(GLProgram::VERTEX_ATTRIB_TEX_COORD);
         glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, sizeof(V2F_C4B_T2F), (GLvoid *)offsetof(V2F_C4B_T2F, texCoords));
-        
+
         glGenVertexArrays(1, &_vaoGLPoint);
         GL::bindVAO(_vaoGLPoint);
         glGenBuffers(1, &_vboGLPoint);
@@ -259,44 +352,46 @@ bool DrawNode::init()
         // Texture coord as pointsize
         glEnableVertexAttribArray(GLProgram::VERTEX_ATTRIB_TEX_COORD);
         glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, sizeof(V2F_C4B_T2F), (GLvoid *)offsetof(V2F_C4B_T2F, texCoords));
-        
+
         GL::bindVAO(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
-        
+
     }
     else
     {
         glGenBuffers(1, &_vbo);
         glBindBuffer(GL_ARRAY_BUFFER, _vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(V2F_C4B_T2F)* _bufferCapacity, _buffer, GL_STREAM_DRAW);
-        
+
         glGenBuffers(1, &_vboGLLine);
         glBindBuffer(GL_ARRAY_BUFFER, _vboGLLine);
         glBufferData(GL_ARRAY_BUFFER, sizeof(V2F_C4B_T2F)*_bufferCapacityGLLine, _bufferGLLine, GL_STREAM_DRAW);
-        
+
         glGenBuffers(1, &_vboGLPoint);
         glBindBuffer(GL_ARRAY_BUFFER, _vboGLPoint);
         glBufferData(GL_ARRAY_BUFFER, sizeof(V2F_C4B_T2F)*_bufferCapacityGLPoint, _bufferGLPoint, GL_STREAM_DRAW);
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
-    
+
     CHECK_GL_ERROR_DEBUG();
+}
+
+bool DrawNode::init()
+{
+    _blendFunc = BlendFunc::ALPHA_PREMULTIPLIED;
+
+    setGLProgramState(GLProgramState::getOrCreateWithGLProgramName(GLProgram::SHADER_NAME_POSITION_LENGTH_TEXTURE_COLOR));
+    
+    ensureCapacity(512);
+    ensureCapacityGLPoint(64);
+    ensureCapacityGLLine(256);
+    
+    setupBuffer();
     
     _dirty = true;
     _dirtyGLLine = true;
-    _dirtyGLPoint = true;
-    
-#if CC_ENABLE_CACHE_TEXTURE_DATA
-    // Need to listen the event only when not use batchnode, because it will use VBO
-    auto listener = EventListenerCustom::create(EVENT_RENDERER_RECREATED, [this](EventCustom* event){
-   /** listen the event that renderer was recreated on Android/WP8 */
-        this->init();
-    });
-
-    _eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
-#endif
-    
+    _dirtyGLPoint = true; 
     return true;
 }
 
@@ -324,12 +419,11 @@ void DrawNode::draw(Renderer *renderer, const Mat4 &transform, uint32_t flags)
     }
 }
 
-void DrawNode::onDraw(const Mat4 &transform, uint32_t flags)
+void DrawNode::onDraw(const Mat4 &transform, uint32_t /*flags*/)
 {
-    auto glProgram = getGLProgram();
-    glProgram->use();
-    glProgram->setUniformsForBuiltins(transform);
-    
+    getGLProgramState()->apply(transform);
+    auto glProgram = this->getGLProgram();
+    glProgram->setUniformLocationWith1f(glProgram->getUniformLocation("u_alpha"), _displayedOpacity / 255.0);
     GL::blendFunc(_blendFunc.src, _blendFunc.dst);
 
     if (_dirty)
@@ -352,7 +446,7 @@ void DrawNode::onDraw(const Mat4 &transform, uint32_t flags)
         glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(V2F_C4B_T2F), (GLvoid *)offsetof(V2F_C4B_T2F, vertices));
         // color
         glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(V2F_C4B_T2F), (GLvoid *)offsetof(V2F_C4B_T2F, colors));
-        // texcood
+        // texcoord
         glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, sizeof(V2F_C4B_T2F), (GLvoid *)offsetof(V2F_C4B_T2F, texCoords));
     }
 
@@ -368,11 +462,12 @@ void DrawNode::onDraw(const Mat4 &transform, uint32_t flags)
     CHECK_GL_ERROR_DEBUG();
 }
 
-void DrawNode::onDrawGLLine(const Mat4 &transform, uint32_t flags)
+void DrawNode::onDrawGLLine(const Mat4 &transform, uint32_t /*flags*/)
 {
     auto glProgram = GLProgramCache::getInstance()->getGLProgram(GLProgram::SHADER_NAME_POSITION_LENGTH_TEXTURE_COLOR);
     glProgram->use();
     glProgram->setUniformsForBuiltins(transform);
+    glProgram->setUniformLocationWith1f(glProgram->getUniformLocation("u_alpha"), _displayedOpacity / 255.0);
 
     GL::blendFunc(_blendFunc.src, _blendFunc.dst);
 
@@ -394,7 +489,7 @@ void DrawNode::onDrawGLLine(const Mat4 &transform, uint32_t flags)
         glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(V2F_C4B_T2F), (GLvoid *)offsetof(V2F_C4B_T2F, vertices));
         // color
         glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(V2F_C4B_T2F), (GLvoid *)offsetof(V2F_C4B_T2F, colors));
-        // texcood
+        // texcoord
         glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, sizeof(V2F_C4B_T2F), (GLvoid *)offsetof(V2F_C4B_T2F, texCoords));
     }
 
@@ -412,11 +507,12 @@ void DrawNode::onDrawGLLine(const Mat4 &transform, uint32_t flags)
     CHECK_GL_ERROR_DEBUG();
 }
 
-void DrawNode::onDrawGLPoint(const Mat4 &transform, uint32_t flags)
+void DrawNode::onDrawGLPoint(const Mat4 &transform, uint32_t /*flags*/)
 {
     auto glProgram = GLProgramCache::getInstance()->getGLProgram(GLProgram::SHADER_NAME_POSITION_COLOR_TEXASPOINTSIZE);
     glProgram->use();
     glProgram->setUniformsForBuiltins(transform);
+    glProgram->setUniformLocationWith1f(glProgram->getUniformLocation("u_alpha"), _displayedOpacity / 255.0);
 
     GL::blendFunc(_blendFunc.src, _blendFunc.dst);
 
@@ -513,16 +609,16 @@ void DrawNode::drawRect(const Vec2 &origin, const Vec2 &destination, const Color
 
 void DrawNode::drawPoly(const Vec2 *poli, unsigned int numberOfPoints, bool closePolygon, const Color4F &color)
 {
-    unsigned int vertext_count;
+    unsigned int vertex_count;
     if(closePolygon)
     {
-        vertext_count = 2 * numberOfPoints;
-        ensureCapacityGLLine(vertext_count);
+        vertex_count = 2 * numberOfPoints;
+        ensureCapacityGLLine(vertex_count);
     }
     else
     {
-        vertext_count = 2 * (numberOfPoints - 1);
-        ensureCapacityGLLine(vertext_count);
+        vertex_count = 2 * (numberOfPoints - 1);
+        ensureCapacityGLLine(vertex_count);
     }
     
     V2F_C4B_T2F *point = (V2F_C4B_T2F*)(_bufferGLLine + _bufferCountGLLine);
@@ -545,7 +641,7 @@ void DrawNode::drawPoly(const Vec2 *poli, unsigned int numberOfPoints, bool clos
         *(point+1) = b;
     }
     
-    _bufferCountGLLine += vertext_count;
+    _bufferCountGLLine += vertex_count;
 }
 
 void DrawNode::drawCircle(const Vec2& center, float radius, float angle, unsigned int segments, bool drawLineToCenter, float scaleX, float scaleY, const Color4F &color)
@@ -773,7 +869,7 @@ void DrawNode::drawPolygon(const Vec2 *verts, int count, const Color4F &fillColo
 {
     CCASSERT(count >= 0, "invalid count value");
     
-    bool outline = (borderColor.a > 0.0 && borderWidth > 0.0);
+    bool outline = (borderColor.a > 0.0f && borderWidth > 0.0f);
     
     auto  triangle_count = outline ? (3*count - 2) : (count - 2);
     auto vertex_count = 3*triangle_count;
@@ -782,16 +878,7 @@ void DrawNode::drawPolygon(const Vec2 *verts, int count, const Color4F &fillColo
     V2F_C4B_T2F_Triangle *triangles = (V2F_C4B_T2F_Triangle *)(_buffer + _bufferCount);
     V2F_C4B_T2F_Triangle *cursor = triangles;
     
-    for (int i = 0; i < count-2; i++)
-    {
-        V2F_C4B_T2F_Triangle tmp = {
-            {verts[0], Color4B(fillColor), __t(v2fzero)},
-            {verts[i+1], Color4B(fillColor), __t(v2fzero)},
-            {verts[i+2], Color4B(fillColor), __t(v2fzero)},
-        };
-        
-        *cursor++ = tmp;
-    }
+    cursor = Triangulate::processTriangles(verts,cursor,count,fillColor);
     
     if(outline)
     {
@@ -808,7 +895,7 @@ void DrawNode::drawPolygon(const Vec2 *verts, int count, const Color4F &fillColo
             Vec2 n1 = v2fnormalize(v2fperp(v2fsub(v1, v0)));
             Vec2 n2 = v2fnormalize(v2fperp(v2fsub(v2, v1)));
             
-            Vec2 offset = v2fmult(v2fadd(n1, n2), 1.0/(v2fdot(n1, n2) + 1.0));
+            Vec2 offset = v2fmult(v2fadd(n1, n2), 1.0f / (v2fdot(n1, n2) + 1.0f));
             struct ExtrudeVerts tmp = {offset, n2};
             extrude[i] = tmp;
         }
@@ -941,14 +1028,27 @@ void DrawNode::setBlendFunc(const BlendFunc &blendFunc)
     _blendFunc = blendFunc;
 }
 
-void DrawNode::setLineWidth(int lineWidth)
+void DrawNode::setLineWidth(GLfloat lineWidth)
 {
     _lineWidth = lineWidth;
 }
 
-float DrawNode::getLineWidth()
+GLfloat DrawNode::getLineWidth()
 {
     return this->_lineWidth;
+}
+
+void DrawNode::visit(Renderer* renderer, const Mat4 &parentTransform, uint32_t parentFlags)
+{
+    if (_isolated)
+    {
+        //ignore `parentTransform` from parent
+        Node::visit(renderer, Mat4::IDENTITY, parentFlags);
+    }
+    else
+    {
+        Node::visit(renderer, parentTransform, parentFlags);
+    }
 }
 
 NS_CC_END

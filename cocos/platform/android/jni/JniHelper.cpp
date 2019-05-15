@@ -1,6 +1,7 @@
 /****************************************************************************
 Copyright (c) 2010-2012 cocos2d-x.org
-Copyright (c) 2013-2014 Chukong Technologies Inc.
+Copyright (c) 2013-2016 Chukong Technologies Inc.
+Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
 http://www.cocos2d-x.org
 
@@ -67,17 +68,19 @@ namespace cocos2d {
     JavaVM* JniHelper::_psJavaVM = nullptr;
     jmethodID JniHelper::loadclassMethod_methodID = nullptr;
     jobject JniHelper::classloader = nullptr;
-    std::unordered_map<JNIEnv*, std::vector<jobject>> JniHelper::localRefs;
+    std::function<void()> JniHelper::classloaderCallback = nullptr;
+    
+    jobject JniHelper::_activity = nullptr;
 
     JavaVM* JniHelper::getJavaVM() {
         pthread_t thisthread = pthread_self();
-        LOGD("JniHelper::getJavaVM(), pthread_self() = %ld", thisthread);
+        //LOGD("JniHelper::getJavaVM(), pthread_self() = %ld", thisthread);
         return _psJavaVM;
     }
 
     void JniHelper::setJavaVM(JavaVM *javaVM) {
         pthread_t thisthread = pthread_self();
-        LOGD("JniHelper::setJavaVM(%p), pthread_self() = %ld", javaVM, thisthread);
+        //LOGD("JniHelper::setJavaVM(%p), pthread_self() = %ld", javaVM, thisthread);
         _psJavaVM = javaVM;
 
         pthread_key_create(&g_key, _detachCurrentThread);
@@ -122,6 +125,10 @@ namespace cocos2d {
             _env = JniHelper::cacheEnv(_psJavaVM);
         return _env;
     }
+    
+    jobject JniHelper::getActivity() {
+        return _activity;
+    }
 
     bool JniHelper::setClassLoaderFrom(jobject activityinstance) {
         JniMethodInfo _getclassloaderMethod;
@@ -149,6 +156,10 @@ namespace cocos2d {
 
         JniHelper::classloader = cocos2d::JniHelper::getEnv()->NewGlobalRef(_c);
         JniHelper::loadclassMethod_methodID = _m.methodID;
+        JniHelper::_activity = cocos2d::JniHelper::getEnv()->NewGlobalRef(activityinstance);
+        if (JniHelper::classloaderCallback != nullptr){
+            JniHelper::classloaderCallback();
+        }
 
         return true;
     }
@@ -276,17 +287,17 @@ namespace cocos2d {
         return strValue;
     }
 
-    jstring JniHelper::convert(cocos2d::JniMethodInfo& t, const char* x) {
+    jstring JniHelper::convert(LocalRefMapType& localRefs, cocos2d::JniMethodInfo& t, const char* x) {
         jstring ret = cocos2d::StringUtils::newStringUTFJNI(t.env, x ? x : "");
         localRefs[t.env].push_back(ret);
         return ret;
     }
 
-    jstring JniHelper::convert(cocos2d::JniMethodInfo& t, const std::string& x) {
-        return convert(t, x.c_str());
+    jstring JniHelper::convert(LocalRefMapType& localRefs, cocos2d::JniMethodInfo& t, const std::string& x) {
+        return convert(localRefs, t, x.c_str());
     }
 
-    void JniHelper::deleteLocalRefs(JNIEnv* env) {
+    void JniHelper::deleteLocalRefs(JNIEnv* env, LocalRefMapType& localRefs) {
         if (!env) {
             return;
         }

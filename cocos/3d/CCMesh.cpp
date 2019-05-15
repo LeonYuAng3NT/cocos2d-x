@@ -1,5 +1,6 @@
 /****************************************************************************
- Copyright (c) 2014 Chukong Technologies Inc.
+ Copyright (c) 2014-2016 Chukong Technologies Inc.
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
  http://www.cocos2d-x.org
 
@@ -125,13 +126,12 @@ Mesh::Mesh()
 : _skin(nullptr)
 , _visible(true)
 , _isTransparent(false)
+, _force2DQueue(false)
 , _meshIndexData(nullptr)
-, _material(nullptr)
 , _glProgramState(nullptr)
 , _blend(BlendFunc::ALPHA_NON_PREMULTIPLIED)
-, _visibleChanged(nullptr)
 , _blendDirty(true)
-, _force2DQueue(false)
+, _material(nullptr)
 , _texFile("")
 {
     
@@ -182,19 +182,19 @@ Mesh* Mesh::create(const std::vector<float>& positions, const std::vector<float>
     att.type = GL_FLOAT;
     att.attribSizeBytes = att.size * sizeof(float);
     
-    if (positions.size())
+    if (!positions.empty())
     {
         perVertexSizeInFloat += 3;
         att.vertexAttrib = GLProgram::VERTEX_ATTRIB_POSITION;
         attribs.push_back(att);
     }
-    if (normals.size())
+    if (!normals.empty())
     {
         perVertexSizeInFloat += 3;
         att.vertexAttrib = GLProgram::VERTEX_ATTRIB_NORMAL;
         attribs.push_back(att);
     }
-    if (texs.size())
+    if (!texs.empty())
     {
         perVertexSizeInFloat += 2;
         att.vertexAttrib = GLProgram::VERTEX_ATTRIB_TEX_COORD;
@@ -203,8 +203,8 @@ Mesh* Mesh::create(const std::vector<float>& positions, const std::vector<float>
         attribs.push_back(att);
     }
     
-    bool hasNormal = (normals.size() != 0);
-    bool hasTexCoord = (texs.size() != 0);
+    bool hasNormal = (!normals.empty());
+    bool hasTexCoord = (!texs.empty());
     //position, normal, texCoordinate into _vertexs
     size_t vertexNum = positions.size() / 3;
     for(size_t i = 0; i < vertexNum; i++)
@@ -229,7 +229,7 @@ Mesh* Mesh::create(const std::vector<float>& positions, const std::vector<float>
     return create(vertices, perVertexSizeInFloat, indices, attribs);
 }
 
-Mesh* Mesh::create(const std::vector<float>& vertices, int perVertexSizeInFloat, const IndexArray& indices, const std::vector<MeshVertexAttrib>& attribs)
+Mesh* Mesh::create(const std::vector<float>& vertices, int /*perVertexSizeInFloat*/, const IndexArray& indices, const std::vector<MeshVertexAttrib>& attribs)
 {
     MeshData meshdata;
     meshdata.attribs = attribs;
@@ -356,7 +356,7 @@ void Mesh::setMaterial(Material* material)
             }
         }
     }
-    // Was the texture set before teh GLProgramState ? Set it
+    // Was the texture set before the GLProgramState ? Set it
     for(auto& tex : _textures)
         setTexture(tex.second, tex.first);
         
@@ -393,9 +393,9 @@ void Mesh::draw(Renderer* renderer, float globalZOrder, const Mat4& transform, u
                       flags);
 
 
-//    if (isTransparent && !forceDepthWrite)
-//        _material->getStateBlock()->setDepthWrite(false);
-//    else
+   if (isTransparent && !forceDepthWrite)
+       _material->getStateBlock()->setDepthWrite(false);
+   else
         _material->getStateBlock()->setDepthWrite(true);
 
 
@@ -416,7 +416,7 @@ void Mesh::draw(Renderer* renderer, float globalZOrder, const Mat4& transform, u
         if (_skin)
             programState->setUniformVec4v("u_matrixPalette", (GLsizei)_skin->getMatrixPaletteSize(), _skin->getMatrixPalette());
 
-        if (scene && scene->getLights().size() > 0)
+        if (scene && !scene->getLights().empty())
             setLightUniforms(pass, scene, color, lightMask);
     }
 
@@ -472,7 +472,7 @@ void Mesh::calculateAABB()
             //get skin root
             Bone3D* root = nullptr;
             Mat4 invBindPose;
-            if (_skin->_skinBones.size())
+            if (!_skin->_skinBones.empty())
             {
                 root = _skin->_skinBones.at(0);
                 while (root) {

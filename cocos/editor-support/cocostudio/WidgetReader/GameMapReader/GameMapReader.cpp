@@ -1,5 +1,6 @@
 /****************************************************************************
  Copyright (c) 2014 cocos2d-x.org
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
  
  http://www.cocos2d-x.org
  
@@ -24,7 +25,11 @@
 
 #include "editor-support/cocostudio/WidgetReader/GameMapReader/GameMapReader.h"
 
+#include "2d/CCLabel.h"
 #include "2d/CCTMXXMLParser.h"
+#include "2d/CCTMXTiledMap.h"
+#include "platform/CCFileUtils.h"
+#include "deprecated/CCString.h"
 
 #include "editor-support/cocostudio/CSParseBinary_generated.h"
 #include "editor-support/cocostudio/WidgetReader/NodeReader/NodeReader.h"
@@ -174,7 +179,7 @@ namespace cocostudio
                 {
                     Size size = layerInfo->_layerSize;
                     auto& tilesets = mapInfo->getTilesets();
-                    if (tilesets.size()>0)
+                    if (!tilesets.empty())
                     {
                         TMXTilesetInfo* tileset = nullptr;
                         for (auto iter = tilesets.crbegin(); iter != tilesets.crend(); ++iter)

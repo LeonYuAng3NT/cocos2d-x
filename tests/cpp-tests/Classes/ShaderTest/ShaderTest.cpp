@@ -1,3 +1,27 @@
+/****************************************************************************
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
+ 
+ http://www.cocos2d-x.org
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ 
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
+ ****************************************************************************/
+
 #include "ShaderTest.h"
 #include "../testResource.h"
 #include "cocos2d.h"
@@ -402,15 +426,14 @@ bool SpriteBlur::initWithTexture(Texture2D* texture, const Rect& rect)
 
 void SpriteBlur::initGLProgram()
 {
-    GLchar * fragSource = nullptr;
 #if (CC_TARGET_PLATFORM != CC_PLATFORM_WINRT)
-    fragSource = (GLchar*) String::createWithContentsOfFile(
-                                FileUtils::getInstance()->fullPathForFilename("Shaders/example_Blur.fsh").c_str())->getCString();  
+    std::string fragSource = FileUtils::getInstance()->getStringFromFile(
+        FileUtils::getInstance()->fullPathForFilename("Shaders/example_Blur.fsh"));
 #else
-    fragSource = (GLchar*)String::createWithContentsOfFile(
-								FileUtils::getInstance()->fullPathForFilename("Shaders/example_Blur_winrt.fsh").c_str())->getCString();
+    std::string fragSource = FileUtils::getInstance()->getStringFromFile(
+        FileUtils::getInstance()->fullPathForFilename("Shaders/example_Blur_winrt.fsh"));
 #endif
-    auto program = GLProgram::createWithByteArrays(ccPositionTextureColor_noMVP_vert, fragSource);
+    auto program = GLProgram::createWithByteArrays(ccPositionTextureColor_noMVP_vert, fragSource.data());
 
     auto glProgramState = GLProgramState::getOrCreateWithGLProgram(program);
     setGLProgramState(glProgramState);
@@ -574,13 +597,16 @@ void ShaderRetroEffect::update(float dt)
     for (int i = 0; i < letterCount; ++i)
     {
         auto sprite = _label->getLetter(i);
-        auto oldPosition = sprite->getPosition();
-        sprite->setPosition(Vec2( oldPosition.x, sinf( _accum * 2 + i/2.0) * 20  ));
-        
-        // add fabs() to prevent negative scaling
-        float scaleY = ( sinf( _accum * 2 + i/2.0 + 0.707) );
-        
-        sprite->setScaleY(scaleY);
+        if (sprite != nullptr)
+        {
+            auto oldPosition = sprite->getPosition();
+            sprite->setPosition(Vec2( oldPosition.x, sinf( _accum * 2 + i/2.0) * 20  ));
+            
+            // add fabs() to prevent negative scaling
+            float scaleY = ( sinf( _accum * 2 + i/2.0 + 0.707) );
+            
+            sprite->setScaleY(scaleY);
+        }
     }
 }
 
@@ -755,9 +781,9 @@ void ShaderMultiTexture::changeTexture(Ref*)
         "Images/grossinis_sister1.png",
         "Images/grossinis_sister2.png"
     };
-    auto textrue = Director::getInstance()->getTextureCache()->addImage(textureFiles[_changedTextureId++ % textureFilesCount]);
+    auto texture = Director::getInstance()->getTextureCache()->addImage(textureFiles[_changedTextureId++ % textureFilesCount]);
     Sprite* right = dynamic_cast<Sprite*>(getChildByTag(rightSpriteTag));
-    right->setTexture(textrue);
+    right->setTexture(texture);
     auto programState = _sprite->getGLProgramState();
     programState->setUniformTexture("u_texture1", right->getTexture());
 }

@@ -1,6 +1,7 @@
 /****************************************************************************
  Copyright (c) 2012 cocos2d-x.org
- Copyright (c) 2013-2014 Chukong Technologies Inc.
+ Copyright (c) 2013-2016 Chukong Technologies Inc.
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
  
  http://www.cocos2d-x.org
  
@@ -96,7 +97,7 @@ void Particle3DTestDemo::onTouchesBegan(const std::vector<Touch*>& touches, coco
 
 void Particle3DTestDemo::onTouchesMoved(const std::vector<Touch*>& touches, cocos2d::Event  *event)
 {
-    if (touches.size())
+    if (!touches.empty())
     {
         auto touch = touches[0];
         auto delta = touch->getDelta();

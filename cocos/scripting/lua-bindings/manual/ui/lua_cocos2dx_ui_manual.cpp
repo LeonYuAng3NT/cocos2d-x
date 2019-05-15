@@ -1,5 +1,6 @@
 /****************************************************************************
- Copyright (c) 2013-2014 Chukong Technologies Inc.
+ Copyright (c) 2013-2016 Chukong Technologies Inc.
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
  
  http://www.cocos2d-x.org
  
@@ -29,13 +30,14 @@
 #include "scripting/lua-bindings/auto/lua_cocos2dx_experimental_webview_auto.hpp"
 #include "scripting/lua-bindings/manual/ui/lua_cocos2dx_experimental_webview_manual.hpp"
 #endif
-#include "cocos2d.h"
+
 #include "scripting/lua-bindings/manual/tolua_fix.h"
 #include "scripting/lua-bindings/manual/LuaBasicConversions.h"
 #include "scripting/lua-bindings/manual/cocos2d/LuaScriptHandlerMgr.h"
 #include "scripting/lua-bindings/manual/CCLuaValue.h"
 #include "ui/CocosGUI.h"
 #include "scripting/lua-bindings/manual/CCLuaEngine.h"
+#include "base/CCEventListenerFocus.h"
 
 using namespace ui;
 
@@ -1173,7 +1175,7 @@ static void extendEventListenerFocusEvent(lua_State* L)
     lua_pop(L, 1);
 }
 
-int register_ui_moudle(lua_State* L)
+int register_ui_module(lua_State* L)
 {
     lua_getglobal(L, "_G");
     if (lua_istable(L,-1))//stack:...,_G,

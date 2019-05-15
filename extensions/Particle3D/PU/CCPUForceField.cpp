@@ -1,6 +1,7 @@
 /****************************************************************************
  Copyright (C) 2013 Henry van Merode. All rights reserved.
- Copyright (c) 2015 Chukong Technologies Inc.
+ Copyright (c) 2015-2016 Chukong Technologies Inc.
+ Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
  
  http://www.cocos2d-x.org
  
@@ -105,7 +106,7 @@ void PUForceFieldCalculationFactory::setWorldSize(const Vec3& worldSize)
 //-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
-void PURealTimeForceFieldCalculationFactory::generate(unsigned int forceFieldSize, 
+void PURealTimeForceFieldCalculationFactory::generate(unsigned int /*forceFieldSize*/,
                                                     unsigned short octaves, 
                                                     double frequency, 
                                                     double amplitude, 
@@ -165,10 +166,7 @@ PUForceField::PUForceField(void) :
 //-----------------------------------------------------------------------
 PUForceField::~PUForceField(void)
 {
-    if (_forceFieldCalculationFactory)
-    {
-        delete _forceFieldCalculationFactory;
-    }
+    delete _forceFieldCalculationFactory;
 }
 //-----------------------------------------------------------------------
 void PUForceField::initialise(ForceFieldType type,
@@ -235,10 +233,7 @@ PUForceFieldCalculationFactory* PUForceField::getForceFieldCalculationFactory() 
 //-----------------------------------------------------------------------
 void PUForceField::setForceFieldCalculationFactory(PUForceFieldCalculationFactory* forceFieldCalculationFactory)
 {
-    if (_forceFieldCalculationFactory)
-    {
-        delete _forceFieldCalculationFactory;
-    }
+    delete _forceFieldCalculationFactory;
     _forceFieldCalculationFactory = forceFieldCalculationFactory;
 }
 //-----------------------------------------------------------------------
@@ -259,7 +254,7 @@ PUForceFieldCalculationFactory* PUForceField::createForceFieldCalculationFactory
     }
 }
 //-----------------------------------------------------------------------
-const PUForceField::ForceFieldType PUForceField::getForceFieldType(void) const
+PUForceField::ForceFieldType PUForceField::getForceFieldType() const
 {
     return _forceFieldType;
 }
